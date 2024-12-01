@@ -1,142 +1,144 @@
-# LifeLog仕様書
+# LifeLog Specification
 
-## 目次
-1. [ユーザー管理機能](#1-ユーザー管理機能)
-2. [日記管理機能](#2-日記管理機能)
-3. [画面仕様](#3-画面仕様)
-4. [データベース設計](#4-データベース設計)
-5. [セキュリティ仕様](#5-セキュリティ仕様)
+## Version History
+- 2024/12/01: Initial release 0.01
 
-## 1. ユーザー管理機能
+## Table of Contents
+1. [User Management](#1-user-management)
+2. [Diary Management](#2-diary-management)
+3. [Screen Specifications](#3-screen-specifications)
+4. [Database Design](#4-database-design)
+5. [Security Specifications](#5-security-specifications)
 
-### 1.1 ユーザー登録
-- ユーザーID：4-20文字の半角英数字
-- 名前（表示名）：3-20文字（文字種自由）
-- パスワード：8-20文字（大文字・小文字・数字を各1文字以上含む）
+## 1. User Management
 
-### 1.2 ログイン機能
-- ユーザーIDとパスワードによる認証
-- 3回連続ログイン失敗でアカウントロック
-- ロック解除は管理者のみ可能
-- 退会済みユーザーはログイン不可（「ユーザーIDまたはパスワードが正しくありません」と表示）
- 
-### 1.3 退会機能
-- パスワード確認による本人確認
-- 退会後のアカウントは以下の制限が適用：
-  - ログイン不可
-  - 投稿した日記は管理者のみ閲覧可能
-- 管理者アカウントは退会不可
-- 退会処理は取り消し不可
+### 1.1 User Registration
+- User ID: 4-20 alphanumeric characters
+- Name (Display Name): 3-20 characters (any character type)
+- Password: 8-20 characters (must include at least one uppercase letter, lowercase letter, and number)
 
-### 1.4 ユーザー権限
-1. 管理者（admin）
-   - 全ユーザーの日記の閲覧・編集・削除（退会済みユーザーの日記を含む）
-   - ユーザー管理（ロック解除、管理者権限の付与/削除）
-   - 退会済みユーザーの日記の管理
-   - 自身の設定変更（退会不可）
+### 1.2 Login Function
+- Authentication using User ID and Password
+- Account lockout after 3 consecutive failed login attempts
+- Only administrators can unlock accounts
+- Deactivated users cannot log in (displays "Invalid User ID or Password")
 
-2. 一般ユーザー
-   - アクティブなユーザーの日記の閲覧
-   - 自身の日記の投稿・編集・削除
-   - 自身の設定変更（退会可能）
+### 1.3 Account Deactivation
+- Password verification required for confirmation
+- Deactivated accounts have the following restrictions:
+  - Cannot log in
+  - Diary entries only visible to administrators
+- Administrator accounts cannot be deactivated
+- Account deactivation is irreversible
 
-3. 未ログインユーザー
-   - アクティブなユーザーの日記の閲覧のみ
+### 1.4 User Roles
+1. Administrator (admin)
+   - View/edit/delete all users' diary entries (including deactivated users)
+   - User management (unlock accounts, grant/revoke admin privileges)
+   - Manage deactivated users' diary entries
+   - Change own settings (cannot deactivate)
 
-### 2.2 日記管理機能
+2. Regular User
+   - View diary entries of active users
+   - Create/edit/delete own diary entries
+   - Change own settings (can deactivate account)
 
-#### 2.2.1 日記投稿
-- タイトル（必須）
-- 本文（必須）
-- メモ（任意、天気・気分・体調など）
-- 作成日時の自動記録
-- 更新日時の自動記録（編集時）
+3. Non-logged-in User
+   - View diary entries of active users only
 
+### 2.2 Diary Management
 
-#### 2.2.2 日記表示
-- 新しい順に表示
-- 投稿者名とユーザーIDを表示
-- 作成日時と最終更新日時を表示
-- 編集・削除ボタンは権限のあるユーザーにのみ表示
-- 退会済みユーザーの日記は管理者のみ閲覧可能
+#### 2.2.1 Diary Entry Creation
+- Title (required)
+- Content (required)
+- Notes (optional, for weather, mood, health condition, etc.)
+- Automatic creation timestamp
+- Automatic update timestamp (when edited)
 
-### 2.3 ユーザー設定機能
+#### 2.2.2 Diary Display
+- Displayed in reverse chronological order
+- Shows author's name and user ID
+- Displays creation and last update timestamps
+- Edit/delete buttons only shown to authorized users
+- Entries from deactivated users only visible to administrators
 
-#### 2.3.1 設定可能項目
-- 表示名の変更
-- パスワードの変更（現在のパスワード確認あり）
-- アカウント退会（パスワード確認あり）
+### 2.3 User Settings
 
-### 2.4 管理者機能
+#### 2.3.1 Configurable Items
+- Change display name
+- Change password (current password verification required)
+- Account deactivation (password verification required)
 
-#### 2.4.1 ユーザー管理
-- ユーザー一覧の表示
-  - アクティブユーザー
-  - 退会済みユーザー（半透明表示）
-- アカウントのロック状態の確認と解除
-- 管理者権限の付与/削除（アクティブユーザーのみ）
-- ログイン試行履歴の確認
-- 退会済みユーザーの日記管理
+### 2.4 Administrator Functions
 
-## 3. 画面仕様
+#### 2.4.1 User Management
+- User list display
+  - Active users
+  - Deactivated users (semi-transparent display)
+- Account lock status check and unlock
+- Grant/revoke admin privileges (active users only)
+- Login attempt history review
+- Manage deactivated users' diary entries
 
-### 3.1 共通ヘッダー
-未ログイン時：
-- ホーム
-- ログイン
-- 新規登録
+## 3. Screen Specifications
 
-ログイン時：
-- ホーム
-- ユーザー設定
-- ユーザー管理（管理者のみ）
-- ログアウト
-- ユーザー名表示
-- 管理者バッジ（管理者のみ）
+### 3.1 Common Header
+Non-logged-in state:
+- Home
+- Login
+- Register
 
-### 3.2 各画面
+Logged-in state:
+- Home
+- User Settings
+- User Management (admin only)
+- Logout
+- Username display
+- Admin badge (admin only)
 
-#### 3.2.1 ホーム画面（/）
-- 日記一覧表示
-- 投稿フォーム（ログイン時のみ）
-  - タイトル入力
-  - 本文入力
-  - メモ入力（天気、気分、体調など）
-- ページネーションなし
+### 3.2 Screens
 
-#### 3.2.2 ログイン画面（/login）
-- ユーザーID入力
-- パスワード入力
-- ログイン試行回数表示
-- エラーメッセージ表示
+#### 3.2.1 Home Screen (/)
+- Diary entry list
+- Entry form (logged-in users only)
+  - Title input
+  - Content input
+  - Notes input (weather, mood, health condition, etc.)
+- No pagination
 
-#### 3.2.3 ユーザー登録画面（/register）
-- ユーザーID入力（バリデーション付き）
-- 名前入力（バリデーション付き）
-- パスワード入力（バリデーション付き）
-- 入力規則の表示
-- エラーメッセージ表示
+#### 3.2.2 Login Screen (/login)
+- User ID input
+- Password input
+- Login attempt counter display
+- Error message display
 
-#### 3.2.4 ユーザー設定画面（/settings）
-- 表示名変更
-- パスワード変更
-- 現在の設定表示
-- アカウント退会セクション
-  - 退会ボタン
-  - 確認モーダル
-  - パスワード確認
+#### 3.2.3 Registration Screen (/register)
+- User ID input (with validation)
+- Name input (with validation)
+- Password input (with validation)
+- Input rules display
+- Error message display
 
-#### 3.2.5 管理者画面（/admin）
-- ユーザー一覧
-  - アクティブ/退会済み状態表示
-  - ロック状態表示
-  - ログイン試行履歴
-  - 管理者権限操作ボタン（アクティブユーザーのみ）
-  - ロック解除ボタン
+#### 3.2.4 User Settings Screen (/settings)
+- Display name change
+- Password change
+- Current settings display
+- Account deactivation section
+  - Deactivation button
+  - Confirmation modal
+  - Password verification
 
-## 4. データベース設計
+#### 3.2.5 Admin Screen (/admin)
+- User list
+  - Active/deactivated status display
+  - Lock status display
+  - Login attempt history
+  - Admin privilege controls (active users only)
+  - Unlock button
 
-### 4.1 usersテーブル
+## 4. Database Design
+
+### 4.1 users Table
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,7 +154,7 @@ CREATE TABLE users (
 );
 ```
 
-### 4.2 entriesテーブル
+### 4.2 entries Table
 ```sql
 CREATE TABLE entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,35 +168,33 @@ CREATE TABLE entries (
 );
 ```
 
-## 5. セキュリティ仕様
+## 5. Security Specifications
 
-### 5.1 アカウントセキュリティ
-- パスワードの複雑性要件
-- ログイン試行回数制限
-- アカウントロック機能
-- 退会時のパスワード確認
+### 5.1 Account Security
+- Password complexity requirements
+- Login attempt limits
+- Account lockout functionality
+- Password verification for account deactivation
 
-### 5.2 アクセス制御
-- セッションベースの認証
-- 権限に基づくアクセス制御
-- CSRF対策（Flaskの組み込み機能）
-- 退会済みユーザーの日記は管理者のみアクセス可能
+### 5.2 Access Control
+- Session-based authentication
+- Role-based access control
+- CSRF protection (Flask built-in feature)
+- Deactivated users' entries accessible only to administrators
 
-## 6. 注意事項
+## 6. Important Notes
 
-### 6.1 開発環境での利用について
-- このアプリケーションは開発環境用です
-- 本番環境での使用には以下の対応が必要です：
-  - セキュアなセッションキーの設定
-  - プロダクション用WSGIサーバーの使用
-  - パスワードのハッシュ化
-  - データベースのバックアップ体制
-  - エラーハンドリングの強化
+### 6.1 Development Environment Usage
+- This application is for development environment use only
+- The following measures are required for production deployment:
+  - Secure session key configuration
+  - Production-grade WSGI server implementation
+  - Password hashing
+  - Database backup strategy
+  - Enhanced error handling
 
-### 6.2 制限事項
-- ファイルのアップロード機能なし
-- ページネーション機能なし
-- パスワードリセット機能なし
-- 退会処理の取り消し機能なし
-
-
+### 6.2 Limitations
+- No file upload functionality
+- No pagination support
+- No password reset feature
+- No account deactivation reversal

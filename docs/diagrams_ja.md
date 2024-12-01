@@ -1,4 +1,7 @@
-# シンプル日記アプリケーション - 設計図
+# LifeLog - 設計図
+
+## 更新履歴
+- 2024/12/01: 0.01公開
 
 ## 1. 画面遷移図
 
@@ -139,6 +142,7 @@ sequenceDiagram
         Backend-->>Frontend: 認証エラー
     end
 ```
+
 ### 日記投稿プロセス
 
 ```mermaid
@@ -166,7 +170,6 @@ sequenceDiagram
         Backend-->>Frontend: エラー: アカウントが無効
     end
 ```
-
 
 ## 4. ユースケース図
 
@@ -286,7 +289,7 @@ flowchart TD
 ```mermaid
 graph TB
     subgraph フロントエンド
-        A[main.css]
+        A[style.css]
         B[admin.css]
         C[user.css]
         D[script.js]
@@ -302,11 +305,13 @@ graph TB
 
     subgraph バックエンド
         J[app.py]
-        K[schema.sql]
+        K[models.py]
+        L[database.py]
+        M[schema.sql]
     end
 
     subgraph データベース
-        L[diary.db]
+        N[diary.db]
     end
 
     %% フロントエンド依存関係
@@ -328,13 +333,17 @@ graph TB
     %% バックエンド依存関係
     J --> K
     J --> L
+    L --> M
+    L --> N
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
     style C fill:#f9f,stroke:#333,stroke-width:2px
     style D fill:#bbf,stroke:#333,stroke-width:2px
     style J fill:#bfb,stroke:#333,stroke-width:2px
-    style L fill:#ff9,stroke:#333,stroke-width:2px
+    style K fill:#bfb,stroke:#333,stroke-width:2px
+    style L fill:#bfb,stroke:#333,stroke-width:2px
+    style N fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ### ディレクトリ構造
@@ -342,22 +351,28 @@ graph TB
 ```
 /
 ├── app.py              # メインアプリケーション
+├── models.py           # データモデル
+├── database.py         # データベース操作
 ├── schema.sql          # データベーススキーマ
-├── diary.db           # SQLiteデータベース
+├── alembic.ini         # Alembicの設定
 ├── requirements.txt    # 依存パッケージリスト
 ├── static/            # 静的ファイル
-│   ├── main.css       # 共通スタイル
+│   ├── style.css      # 共通スタイル
 │   ├── admin.css      # 管理画面スタイル
 │   ├── user.css       # ユーザー設定スタイル
 │   └── script.js      # クライアントサイドスクリプト
-└── templates/         # HTMLテンプレート
-    ├── index.html     # トップページ
-    ├── login.html     # ログインページ
-    ├── register.html  # ユーザー登録ページ
-    ├── settings.html  # ユーザー設定ページ
-    └── admin.html     # 管理者ページ
+├── templates/         # HTMLテンプレート
+│   ├── index.html     # トップページ
+│   ├── login.html     # ログインページ
+│   ├── register.html  # ユーザー登録ページ
+│   ├── settings.html  # ユーザー設定ページ
+│   └── admin.html     # 管理者ページ
+├── instance/          # インスタンス固有のファイル
+│   └── diary.db      # SQLiteデータベース
+├── migrations/        # データベースマイグレーション
+└── docs/             # ドキュメント
+    └── specification.md  # 仕様書
 ```
-
 
 ## 8. 補足：データベース制約
 
