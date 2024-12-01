@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - シンプル日記</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>シンプル日記</h1>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">ホーム</a>
+                <a href="/register" class="nav-link">新規登録</a>
+            </nav>
+        </div>
+        
+        <div class="auth-form">
+            <h2>ログイン</h2>
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div class="form-group">
+                <label for="userid">ユーザーID:</label>
+                <input type="text" id="userid" placeholder="ユーザーIDを入力" required>
+            </div>
+            <div class="form-group">
+                <label for="password">パスワード:</label>
+                <input type="password" id="password" placeholder="パスワードを入力" required>
+            </div>
+            <div class="button-container">
+                <button onclick="login()">ログイン</button>
+            </div>
+            <div class="auth-links">
+                <a href="/register">新規登録はこちら</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            const userid = document.getElementById('userid').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!userid || !password) {
+                showError('ユーザーIDとパスワードを入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userid, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    showError(data.error || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Enterキーでログイン
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>

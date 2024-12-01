@@ -1,0 +1,443 @@
+/* 基本レイアウト */
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* ヘッダーとナビゲーション */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+h1 {
+    color: #333;
+    margin: 0;
+}
+
+h2 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+h3 {
+    color: #444;
+    margin: 20px 0 10px;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.nav-link {
+    color: #2196F3;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+}
+
+.admin-badge {
+    background-color: #ff4444;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.logout-btn {
+    background-color: #666;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.logout-btn:hover {
+    background-color: #555;
+}
+
+/* フォーム共通 */
+.auth-form,
+.settings-form {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.form-help {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.form-help ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.form-help li {
+    margin: 2px 0;
+}
+
+.form-section {
+    margin: 20px 0;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+/* 認証関連 */
+.auth-links {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.auth-links a {
+    color: #2196F3;
+    text-decoration: none;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+/* メッセージ表示 */
+.error-message {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid #ef9a9a;
+    font-size: 14px;
+}
+
+.success-message {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border: 1px solid #a5d6a7;
+    font-size: 14px;
+}
+
+/* 日記投稿フォーム */
+.diary-form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #2196F3;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.button-container {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+/* メモ関連 */
+.notes-field {
+    margin-top: 1rem;
+}
+
+.notes-field textarea {
+    min-height: 60px;
+    background-color: #fafafa;
+}
+
+.notes-field textarea::placeholder {
+    color: #999;
+}
+
+.entry-notes {
+    margin-top: 0.5rem;
+    padding: 0.8rem;
+    background-color: #fafafa;
+    border-radius: 4px;
+    border-left: 3px solid #4CAF50;
+    white-space: pre-wrap;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.entry-notes-label {
+    display: inline-block;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 0.25rem;
+    font-size: 0.9em;
+}
+
+/* 日記エントリー */
+.entries {
+    margin-top: 20px;
+}
+
+.entry {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.entry-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding-right: 120px;
+}
+
+.entry-author {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.entry-content {
+    margin-bottom: 15px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.entry-dates {
+    color: #666;
+    font-size: 14px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+.date-label {
+    color: #888;
+    margin-right: 5px;
+}
+
+.entry-updated {
+    color: #2196F3;
+    margin-left: 15px;
+}
+
+.action-buttons {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.edit-btn {
+    background-color: #2196F3;
+}
+
+.edit-btn:hover {
+    background-color: #1976D2;
+}
+
+.delete-btn {
+    background-color: #ff4444;
+}
+
+.delete-btn:hover {
+    background-color: #cc0000;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .nav-menu {
+        justify-content: center;
+    }
+
+    .action-buttons {
+        position: static;
+        margin-top: 10px;
+    }
+
+    .entry-title {
+        padding-right: 0;
+    }
+}
+
+/* 活動項目関連 */
+.diary-items {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.diary-items h3 {
+    color: #2196F3;
+    margin-bottom: 1rem;
+}
+
+.item-entry {
+    background-color: #f8f8f8;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    position: relative;
+}
+
+.item-entry .item-name {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    width: calc(100% - 70px);  /* 削除ボタンの幅を考慮 */
+}
+
+.item-entry .item-content {
+    min-height: 60px;
+    background-color: white;
+}
+
+.item-entry .remove-item {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: #ff4444;
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+.item-entry .remove-item:hover {
+    background-color: #cc0000;
+}
+
+.add-item {
+    background-color: #2196F3;
+    margin-top: 1rem;
+}
+
+.add-item:hover {
+    background-color: #1976D2;
+}
+
+/* 活動項目の表示スタイル */
+.entry-items {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    border-left: 3px solid #2196F3;
+}
+
+.items-label {
+    display: inline-block;
+    font-weight: bold;
+    color: #2196F3;
+    margin-bottom: 0.5rem;
+    font-size: 0.9em;
+}
+
+.entry-items .item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.entry-items .item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.entry-items .item-name {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.1em;
+}
+
+.entry-items .item-content {
+    color: #666;
+    white-space: pre-wrap;
+    line-height: 1.4;
+}

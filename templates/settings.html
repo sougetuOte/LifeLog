@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー設定 - シンプル日記</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='user.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>シンプル日記</h1>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">ホーム</a>
+                <span class="user-info">
+                    {{ session.name }}
+                    {% if session.is_admin %}
+                    <span class="admin-badge">管理者</span>
+                    {% endif %}
+                </span>
+                <button onclick="logout()" class="logout-btn">ログアウト</button>
+            </nav>
+        </div>
+
+        <div class="settings-form">
+            <h2>ユーザー設定</h2>
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="success-message" class="success-message" style="display: none;"></div>
+
+            <div class="form-group">
+                <label for="name">表示名:</label>
+                <input type="text" id="name" value="{{ session.name }}" required>
+                <div class="form-help">3-20文字で入力してください</div>
+            </div>
+
+            <div class="form-section">
+                <h3>パスワード変更</h3>
+                <div class="form-group">
+                    <label for="currentPassword">現在のパスワード:</label>
+                    <input type="password" id="currentPassword">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">新しいパスワード:</label>
+                    <input type="password" id="newPassword">
+                    <div class="form-help">
+                        <ul>
+                            <li>8文字以上20文字以下</li>
+                            <li>アルファベット大文字を1文字以上含む</li>
+                            <li>アルファベット小文字を1文字以上含む</li>
+                            <li>数字を1文字以上含む</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button onclick="updateSettings()">設定を更新</button>
+            </div>
+
+            <div class="deactivate-section">
+                <h3>アカウント退会</h3>
+                <p>退会すると以下の制限が適用されます：</p>
+                <ul>
+                    <li>アカウントへのログインができなくなります</li>
+                    <li>投稿した日記は管理者のみが閲覧可能になります</li>
+                    <li>一度退会すると元に戻すことはできません</li>
+                </ul>
+                <button class="deactivate-button" onclick="showDeactivateModal()">退会する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退会確認モーダル -->
+    <div id="deactivateModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>アカウント退会の確認</h3>
+            </div>
+            <div class="modal-body">
+                <p>本当にアカウントを退会しますか？</p>
+                <p>この操作は取り消すことができません。</p>
+                <div class="confirm-password">
+                    <label for="confirmPassword">確認のためパスワードを入力してください:</label>
+                    <input type="password" id="confirmPassword">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button modal-cancel" onclick="hideDeactivateModal()">キャンセル</button>
+                <button class="modal-button modal-confirm" onclick="deactivateAccount()">退会する</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function updateSettings() {
+            const name = document.getElementById('name').value.trim();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!name) {
+                showError('表示名を入力してください');
+                return;
+            }
+
+            if ((currentPassword && !newPassword) || (!currentPassword && newPassword)) {
+                showError('パスワードを変更する場合は、現在のパスワードと新しいパスワードの両方を入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name,
+                        currentPassword: currentPassword || undefined,
+                        newPassword: newPassword || undefined
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message);
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    showError(data.error || '設定の更新に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        function showDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'block';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        function hideDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'none';
+        }
+
+        async function deactivateAccount() {
+            const password = document.getElementById('confirmPassword').value;
+            
+            if (!password) {
+                showError('パスワードを入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    const data = await response.json();
+                    showError(data.error || 'アカウントの退会に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    showError('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeLog</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LifeLog</h1>
+            <nav class="nav-menu" id="navMenu">
+                <!-- メニューはJavaScriptで動的に生成されます -->
+            </nav>
+        </div>
+        
+        <div id="postForm" class="diary-form" style="display: none;">
+            <input type="text" id="diaryTitle" placeholder="タイトルを入力してください..." />
+            <textarea id="diaryContent" placeholder="今日の出来事を書いてください..."></textarea>
+            <div class="notes-field">
+                <textarea id="diaryNotes" placeholder="メモ（天気、気分、体調など）..."></textarea>
+            </div>
+
+            <!-- 活動項目セクション -->
+            <div class="diary-items">
+                <h3>活動項目</h3>
+                <div id="itemsList">
+                    <!-- 活動項目がJavaScriptで追加されます -->
+                </div>
+                <div class="item-template" style="display: none;">
+                    <div class="item-entry">
+                        <input type="text" class="item-name" placeholder="項目名（例：筋トレ、勉強）" />
+                        <textarea class="item-content" placeholder="詳細を入力してください..."></textarea>
+                        <button class="remove-item" onclick="removeItem(this)">削除</button>
+                    </div>
+                </div>
+                <button class="add-item" onclick="addNewItem()">項目を追加</button>
+            </div>
+
+            <div class="button-container">
+                <button id="submitButton" onclick="postEntry()">投稿</button>
+                <button id="updateButton" onclick="updateEntry()" style="display: none;">更新</button>
+                <button id="cancelButton" onclick="cancelEdit()" style="display: none;">キャンセル</button>
+            </div>
+        </div>
+
+        <div id="entries" class="entries">
+            <!-- エントリーがJavaScriptで追加されます -->
+        </div>
+    </div>
+
+    <!-- エントリー表示のテンプレート -->
+    <template id="entryTemplate">
+        <div class="entry">
+            <div class="action-buttons">
+                <button class="edit-btn" onclick="startEdit(${entry.id})">編集</button>
+                <button class="delete-btn" onclick="deleteEntry(${entry.id})">削除</button>
+            </div>
+            <div class="entry-title">${escapeHtml(entry.title)}</div>
+            <div class="entry-author">投稿者: ${escapeHtml(entry.author_name)} (@${escapeHtml(entry.author_userid)})</div>
+            <div class="entry-content">${escapeHtml(entry.content)}</div>
+            
+            <!-- メモ表示部分 -->
+            ${entry.notes ? `
+                <div class="entry-notes">
+                    <span class="notes-label">メモ</span>
+                    <div>${escapeHtml(entry.notes)}</div>
+                </div>
+            ` : ''}
+
+            <!-- 活動項目表示部分 -->
+            ${entry.items && entry.items.length > 0 ? `
+                <div class="entry-items">
+                    <span class="items-label">活動項目</span>
+                    ${entry.items.map(item => `
+                        <div class="item">
+                            <div class="item-name">${escapeHtml(item.item_name)}</div>
+                            <div class="item-content">${escapeHtml(item.item_content)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            <div class="entry-dates">
+                <span class="date-label">作成:</span>${entry.created_at}
+                ${entry.updated_at ? `
+                    <span class="entry-updated">
+                        <span class="date-label">最終更新:</span>${entry.updated_at}
+                    </span>
+                ` : ''}
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // ユーザーセッション情報
+        const userSession = {
+            isLoggedIn: {{ 'true' if session.user_id else 'false' }},
+            name: "{{ session.name if session.name else '' }}",
+            isAdmin: {{ 'true' if session.is_admin else 'false' }}
+        };
+
+        // メニューの更新
+        function updateNavMenu() {
+            const navMenu = document.getElementById('navMenu');
+            const postForm = document.getElementById('postForm');
+            
+            if (userSession.isLoggedIn) {
+                // ログイン済みの場合のメニュー
+                navMenu.innerHTML = `
+                    <span class="user-info">
+                        ${userSession.name}
+                        ${userSession.isAdmin ? '<span class="admin-badge">管理者</span>' : ''}
+                    </span>
+                    <a href="/settings" class="nav-link">ユーザー設定</a>
+                    ${userSession.isAdmin ? '<a href="/admin" class="nav-link">ユーザー管理</a>' : ''}
+                    <button onclick="logout()" class="logout-btn">ログアウト</button>
+                `;
+                postForm.style.display = 'block';
+            } else {
+                // 未ログインの場合のメニュー
+                navMenu.innerHTML = `
+                    <a href="/login" class="nav-link">ログイン</a>
+                    <a href="/register" class="nav-link">新規登録</a>
+                `;
+                postForm.style.display = 'none';
+            }
+        }
+
+        // 活動項目の追加
+        function addNewItem() {
+            const itemsList = document.getElementById('itemsList');
+            const template = document.querySelector('.item-template').cloneNode(true);
+            template.style.display = 'block';
+            template.classList.remove('item-template');
+            itemsList.appendChild(template);
+        }
+
+        // 活動項目の削除
+        function removeItem(button) {
+            button.closest('.item-entry').remove();
+        }
+
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNavMenu();
+            loadEntries();
+        });
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

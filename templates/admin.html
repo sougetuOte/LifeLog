@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー管理 - LifeLog</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+    <style>
+        .deactivated {
+            opacity: 0.7;
+            background-color: #f8f8f8;
+        }
+        .deactivated-badge {
+            background-color: #666;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+        .user-status-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .visibility-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 4px;
+        }
+        .entries-count {
+            font-size: 0.9em;
+            color: #2196F3;
+            margin-top: 4px;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+        }
+        .restore-btn {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LifeLog</h1>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">ホーム</a>
+                <a href="/settings" class="nav-link">ユーザー設定</a>
+                <span class="user-info">
+                    {{ session.name }}
+                    <span class="admin-badge">管理者</span>
+                </span>
+                <button onclick="logout()" class="logout-btn">ログアウト</button>
+            </nav>
+        </div>
+
+        <div class="admin-panel">
+            <h2>ユーザー管理</h2>
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="success-message" class="success-message" style="display: none;"></div>
+
+            <div id="users-list" class="users-list">
+                <!-- ユーザー一覧がJavaScriptで追加されます -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ユーザー一覧を読み込み
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                const users = await response.json();
+                
+                const usersList = document.getElementById('users-list');
+                usersList.innerHTML = users.map(user => `
+                    <div class="user-item ${user.is_locked ? 'locked' : ''} ${!user.is_visible ? 'deactivated' : ''}">
+                        <div class="user-info-admin">
+                            <div class="user-primary-info">
+                                <span class="user-name">${escapeHtml(user.name)}</span>
+                                <span class="user-id">@${escapeHtml(user.userid)}</span>
+                                <div class="user-status-badges">
+                                    ${user.is_admin ? '<span class="admin-badge">管理者</span>' : ''}
+                                    ${user.is_locked ? '<span class="locked-badge">ロック中</span>' : ''}
+                                    ${!user.is_visible ? '<span class="deactivated-badge">退会済み</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="user-secondary-info">
+                                <div class="login-info">
+                                    ログイン試行: ${user.login_attempts}回
+                                    ${user.last_login_attempt ? `/ 最終試行: ${new Date(user.last_login_attempt).toLocaleString('ja-JP')}` : ''}
+                                </div>
+                                <div class="entries-count">
+                                    投稿数: ${user.entries_count}件
+                                </div>
+                                ${!user.is_visible ? `
+                                    <div class="visibility-info">
+                                        ※このユーザーの日記は管理者のみ閲覧可能です
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            ${user.is_locked && user.is_visible ? `
+                                <button onclick="unlockUser(${user.id})" class="unlock-btn">
+                                    <span class="unlock-icon">🔓</span>
+                                    ロック解除
+                                </button>
+                            ` : ''}
+                            ${!user.is_admin ? `
+                                <button onclick="toggleVisibility(${user.id})" class="${user.is_visible ? 'delete-btn' : 'restore-btn'}">
+                                    ${user.is_visible ? 'ユーザーを削除' : 'ユーザーを復元'}
+                                </button>
+                            ` : ''}
+                            ${user.is_visible && !user.is_admin ? `
+                                <button onclick="toggleAdmin(${user.id})" class="toggle-admin-btn">
+                                    ${user.is_admin ? '管理者権限を削除' : '管理者権限を付与'}
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                showError('ユーザー一覧の読み込みに失敗しました');
+            }
+        }
+
+        // ユーザーのロックを解除
+        async function unlockUser(userId) {
+            if (!confirm('このユーザーのロックを解除しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/unlock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message);
+                    loadUsers();
+                } else {
+                    showError(data.error || 'ロック解除に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        // 管理者権限の切り替え
+        async function toggleAdmin(userId) {
+            if (!confirm('このユーザーの管理者権限を変更しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/toggle-admin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message);
+                    loadUsers();
+                } else {
+                    showError(data.error || '権限の更新に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        // ユーザーの可視性を切り替え
+        async function toggleVisibility(userId) {
+            if (!confirm('このユーザーの状態を変更しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}/toggle-visibility`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess(data.message);
+                    loadUsers();
+                } else {
+                    showError(data.error || 'ユーザー状態の更新に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    showError('ログアウトに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('エラーが発生しました');
+            }
+        }
+
+        // 初期ロード
+        loadUsers();
+
+        // 定期的な更新（30秒ごと）
+        setInterval(loadUsers, 30000);
+    </script>
+</body>
+</html>

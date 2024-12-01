@@ -1,0 +1,127 @@
+/* 管理者パネル */
+.admin-panel {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.users-list {
+    margin-top: 20px;
+}
+
+/* ユーザー項目 */
+.user-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    transition: background-color 0.3s;
+}
+
+.user-item.locked {
+    background-color: #fff3e0;
+    border-color: #ffb74d;
+}
+
+.user-info-admin {
+    flex: 1;
+}
+
+.user-primary-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+
+.user-name {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.user-id {
+    color: #666;
+    font-size: 14px;
+}
+
+.user-secondary-info {
+    font-size: 14px;
+    color: #666;
+}
+
+.login-info {
+    margin-top: 5px;
+    color: #666;
+}
+
+/* バッジとステータス */
+.locked-badge {
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* アクションボタン */
+.user-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.unlock-btn {
+    background-color: #ff9800;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.unlock-btn:hover {
+    background-color: #f57c00;
+}
+
+.unlock-icon {
+    font-size: 16px;
+}
+
+.toggle-admin-btn {
+    background-color: #2196F3;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.toggle-admin-btn:hover {
+    background-color: #1976D2;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 600px) {
+    .user-item {
+        flex-direction: column;
+    }
+
+    .user-actions {
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+
+    .user-primary-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
