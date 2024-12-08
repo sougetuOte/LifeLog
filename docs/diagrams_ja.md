@@ -3,6 +3,7 @@
 ## 更新履歴
 - 2024/12/01: 0.01公開
 - 2024/12/08: モデル構造の改善とテスト構成の追加
+- 2024/12/09: データベース構造とリレーションシップの詳細追加
 
 ## 1. 画面遷移図
 
@@ -41,6 +42,7 @@ stateDiagram-v2
 classDiagram
     class Base {
         <<abstract>>
+        +DeclarativeBase
     }
 
     class User {
@@ -54,6 +56,7 @@ classDiagram
         +int login_attempts
         +datetime last_login_attempt
         +datetime created_at
+        +List[Entry] entries
         +check_password()
         +validate_password()
         +check_lock_status()
@@ -67,6 +70,8 @@ classDiagram
         +string notes
         +datetime created_at
         +datetime updated_at
+        +User user
+        +List[DiaryItem] items
         +update()
     }
 
@@ -76,6 +81,7 @@ classDiagram
         +string item_name
         +string item_content
         +datetime created_at
+        +Entry entry
     }
 
     class UserManager {
@@ -89,8 +95,8 @@ classDiagram
     Base <|-- User
     Base <|-- Entry
     Base <|-- DiaryItem
-    User "1" -- "*" Entry : creates
-    Entry "1" -- "*" DiaryItem : contains
+    User "1" -- "*" Entry : creates >
+    Entry "1" -- "*" DiaryItem : contains >
     UserManager -- User : manages
 ```
 
@@ -216,13 +222,12 @@ graph TB
     管理者 -->|継承| 一般ユーザー
 ```
 
-
 ## 5. ERD（Entity Relationship Diagram）
 
 ```mermaid
 erDiagram
     users {
-        int id PK
+        int id PK "自動増分"
         string userid UK "ユーザーID（4-20文字）"
         string name "表示名（3-20文字）"
         string password "パスワード（ハッシュ化）"
@@ -235,7 +240,7 @@ erDiagram
     }
 
     entries {
-        int id PK
+        int id PK "自動増分"
         int user_id FK "作成者ID"
         string title "タイトル"
         text content "本文"
@@ -245,7 +250,7 @@ erDiagram
     }
 
     diary_items {
-        int id PK
+        int id PK "自動増分"
         int entry_id FK "日記エントリーID"
         string item_name "項目名"
         text item_content "項目内容"
@@ -337,21 +342,27 @@ graph TB
             L4[diary_item.py]
             L5[user_manager.py]
             L6[init_data.py]
+            L7[models.py]
         end
         M[database.py]
         N[schema.sql]
+        O[alembic.ini]
     end
 
     subgraph データベース
-        O[diary.db]
+        P[diary.db]
+    end
+
+    subgraph マイグレーション
+        Q[versions/]
     end
 
     subgraph テスト
-        P[pytest.ini]
-        Q[test_user.py]
-        R[test_entry.py]
-        S[test_user_manager.py]
-        T[conftest.py]
+        R[pytest.ini]
+        S[test_user.py]
+        T[test_entry.py]
+        U[test_user_manager.py]
+        V[conftest.py]
     end
 
     %% フロントエンド依存関係
@@ -383,7 +394,8 @@ graph TB
     L5 --> L2
     K --> M
     M --> N
-    M --> O
+    M --> P
+    O --> Q
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
@@ -397,9 +409,12 @@ graph TB
     style L4 fill:#bfb,stroke:#333,stroke-width:2px
     style L5 fill:#bfb,stroke:#333,stroke-width:2px
     style L6 fill:#bfb,stroke:#333,stroke-width:2px
+    style L7 fill:#bfb,stroke:#333,stroke-width:2px
     style M fill:#bfb,stroke:#333,stroke-width:2px
-    style O fill:#ff9,stroke:#333,stroke-width:2px
+    style O fill:#bfb,stroke:#333,stroke-width:2px
+    style P fill:#ff9,stroke:#333,stroke-width:2px
 ```
+
 
 ### ディレクトリ構造
 
@@ -407,6 +422,8 @@ graph TB
 /
 ├── app.py              # メインアプリケーション
 ├── database.py         # データベース操作
+├── models.py           # SQLAlchemyモデル定義（統合版）
+├── alembic.ini         # マイグレーション設定
 ├── models/            # モデル定義
 │   ├── __init__.py    # モデルパッケージ初期化
 │   ├── base.py        # 基本クラス定義
@@ -427,9 +444,10 @@ graph TB
 │   ├── register.html  # ユーザー登録ページ
 │   ├── settings.html  # ユーザー設定ページ
 │   └── admin.html     # 管理者ページ
+├── migrations/        # マイグレーションファイル
+│   └── versions/      # バージョン管理されたマイグレーション
 ├── instance/          # インスタンス固有のファイル
 │   └── diary.db      # SQLiteデータベース
-├── migrations/        # データベースマイグレーション
 ├── tests/            # テストファイル
 │   ├── conftest.py   # テスト共通設定
 │   ├── test_user.py  # ユーザーテスト
@@ -453,14 +471,21 @@ graph TB
 - `is_locked`: デフォルトfalse
 - `is_visible`: デフォルトtrue（退会するとfalse）
 - `login_attempts`: デフォルト0
+- `last_login_attempt`: NULL許容
 - `created_at`: NOT NULL
 
 ### entriesテーブル
 - `id`: 自動増分の主キー
-- `user_id`: 外部キー（users.id）、NOT NULL
+- `user_id`: 外部キー（users.id）、NOT NULL、ON DELETE CASCADE
 - `title`: NOT NULL
 - `content`: NOT NULL
 - `notes`: NOT NULL、デフォルト空文字列
 - `created_at`: NOT NULL
 - `updated_at`: NULL許容（更新時のみ設定）
 
+### diary_itemsテーブル
+- `id`: 自動増分の主キー
+- `entry_id`: 外部キー（entries.id）、NOT NULL、ON DELETE CASCADE
+- `item_name`: NOT NULL
+- `item_content`: NOT NULL
+- `created_at`: NOT NULL

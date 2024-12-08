@@ -3,6 +3,8 @@
 ## Version History
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test specification additions
+- 2024/12/09: Database structure and migration specification additions
+
 
 ## Table of Contents
 1. [User Management](#1-user-management)
@@ -140,6 +142,7 @@ Logged-in state:
   - Admin privilege controls (active users only)
   - Unlock button
 
+
 ## 4. Database Design
 
 ### 4.1 users Table
@@ -153,8 +156,8 @@ CREATE TABLE users (
     is_locked BOOLEAN NOT NULL DEFAULT 0,
     is_visible BOOLEAN NOT NULL DEFAULT 1,
     login_attempts INTEGER NOT NULL DEFAULT 0,
-    last_login_attempt TEXT,
-    created_at TEXT NOT NULL
+    last_login_attempt DATETIME,
+    created_at DATETIME NOT NULL
 );
 ```
 
@@ -166,11 +169,28 @@ CREATE TABLE entries (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     notes TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL,
-    updated_at TEXT,
-    FOREIGN KEY (user_id) REFERENCES users (id)
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 ```
+
+### 4.3 diary_items Table
+```sql
+CREATE TABLE diary_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_id INTEGER NOT NULL,
+    item_name TEXT NOT NULL,
+    item_content TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES entries (id) ON DELETE CASCADE
+);
+```
+
+### 4.4 Migration Management
+- Migration management using Alembic
+- Migration files stored in `migrations/versions/`
+- Migration configuration managed in `alembic.ini`
 
 ## 5. Model Structure
 
@@ -185,15 +205,20 @@ CREATE TABLE entries (
    - Login attempt tracking (attempt count, last attempt time)
    - Password verification functionality
    - Lock status check functionality
+   - One-to-many relationship with Entries
 
 2. Entry: Diary entry management
    - Basic attributes (ID, user ID, title, content, notes)
    - Timestamps (creation time, update time)
    - Update functionality
+   - Relationships with User and DiaryItems
+   - Cascade delete settings
 
 3. DiaryItem: Diary item management
    - Basic attributes (ID, entry ID, item name, item content)
    - Timestamp (creation time)
+   - Relationship with Entry
+   - Cascade delete settings
 
 4. UserManager: User management functionality
    - User list retrieval (visible users/all users)
@@ -210,6 +235,8 @@ models/
 ├── diary_item.py  # Diary item model
 ├── user_manager.py # User management
 └── init_data.py   # Initial data creation
+
+models.py          # SQLAlchemy Model Definitions (Unified)
 ```
 
 ## 6. Security Specifications
@@ -286,3 +313,4 @@ models/
 - No pagination support
 - No password reset feature
 - No account deletion reversal
+

@@ -3,6 +3,7 @@
 ## 更新履歴
 - 2024/12/01: 0.01公開
 - 2024/12/08: モデル構造の改善とテスト仕様の追加
+- 2024/12/09: データベース構造とマイグレーション仕様の追加
 
 ## 目次
 1. [ユーザー管理機能](#1-ユーザー管理機能)
@@ -153,8 +154,8 @@ CREATE TABLE users (
     is_locked BOOLEAN NOT NULL DEFAULT 0,
     is_visible BOOLEAN NOT NULL DEFAULT 1,
     login_attempts INTEGER NOT NULL DEFAULT 0,
-    last_login_attempt TEXT,
-    created_at TEXT NOT NULL
+    last_login_attempt DATETIME,
+    created_at DATETIME NOT NULL
 );
 ```
 
@@ -166,11 +167,29 @@ CREATE TABLE entries (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     notes TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL,
-    updated_at TEXT,
-    FOREIGN KEY (user_id) REFERENCES users (id)
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 ```
+
+### 4.3 diary_itemsテーブル
+```sql
+CREATE TABLE diary_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_id INTEGER NOT NULL,
+    item_name TEXT NOT NULL,
+    item_content TEXT NOT NULL,
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES entries (id) ON DELETE CASCADE
+);
+```
+
+### 4.4 マイグレーション管理
+- Alembicを使用したマイグレーション管理
+- マイグレーションファイルは`migrations/versions/`に保存
+- マイグレーション設定は`alembic.ini`で管理
+
 ## 5. モデル構造
 
 ### 5.1 基本構造
@@ -184,15 +203,20 @@ CREATE TABLE entries (
    - ログイン試行関連（試行回数、最終試行日時）
    - パスワード検証機能
    - ロック状態チェック機能
+   - Entriesとの1対多リレーション
 
 2. Entry: 日記エントリー管理
    - 基本属性（ID、ユーザーID、タイトル、本文、メモ）
    - タイムスタンプ（作成日時、更新日時）
    - 更新機能
+   - UserとDiaryItemsとのリレーション
+   - カスケード削除設定
 
 3. DiaryItem: 日記項目管理
    - 基本属性（ID、エントリーID、項目名、項目内容）
    - タイムスタンプ（作成日時）
+   - Entryとのリレーション
+   - カスケード削除設定
 
 4. UserManager: ユーザー管理機能
    - ユーザー一覧取得（可視ユーザー/全ユーザー）
@@ -209,6 +233,8 @@ models/
 ├── diary_item.py  # 日記項目モデル
 ├── user_manager.py # ユーザー管理機能
 └── init_data.py   # 初期データ作成
+
+models.py          # SQLAlchemyモデル定義（統合版）
 ```
 
 ## 6. セキュリティ仕様
@@ -280,7 +306,6 @@ models/
   - 初期データ作成（init_data.py）
 
 ## 8. 注意事項
-
 
 ### 8.1 開発環境での利用について
 - このアプリケーションは開発環境用です

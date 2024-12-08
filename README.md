@@ -8,6 +8,7 @@ A simple diary posting and management system with user authentication, featuring
 ## Version History
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test additions
+- 2024/12/09: Migration functionality added
 
 ## Key Features
 
@@ -20,6 +21,8 @@ A simple diary posting and management system with user authentication, featuring
 
 - Python 3.11.9
 - Flask 3.1.0
+- SQLAlchemy 2.0
+- Alembic 1.13.0
 - SQLite3
 - HTML/CSS/JavaScript
 
@@ -38,9 +41,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Initialize Database and Start Application
+3. Database Setup
 ```bash
-python -c "from app import init_db; init_db()"
+# Run migrations
+alembic upgrade head
+
+# Create initial data
+python -c "from models import create_initial_data; create_initial_data()"
+```
+
+4. Start Application
+```bash
 python app.py
 ```
 
@@ -65,11 +76,18 @@ The tests cover the following areas:
 - Access Control
 - Database Operations
 
-## Default Account
+## Initial Accounts
 
 Administrator Account:
 - User ID: admin
 - Password: Admin3210
+
+Test Users:
+- User ID: tetsu
+- Password: Tetsu3210
+
+- User ID: gento
+- Password: Gento3210
 
 ## Current Limitations
 
@@ -94,6 +112,8 @@ For detailed application specifications, please refer to the following documents
 /
 ├── app.py              # Main Application
 ├── database.py         # Database Operations
+├── models.py           # SQLAlchemy Model Definitions (Unified)
+├── alembic.ini         # Migration Configuration
 ├── models/            # Model Definitions
 │   ├── __init__.py    # Model Package Initialization
 │   ├── base.py        # Base Class Definition
@@ -109,9 +129,22 @@ For detailed application specifications, please refer to the following documents
 │   ├── main.css       # Main Styles
 │   └── script.js      # Client-side Scripts
 ├── templates/         # HTML Templates
-├── tests/            # Test Files
+│   ├── index.html     # Homepage
+│   ├── login.html     # Login Page
+│   ├── register.html  # Registration Page
+│   ├── settings.html  # User Settings Page
+│   └── admin.html     # Admin Panel
+├── migrations/        # Migration Files
+│   └── versions/      # Version-controlled Migrations
+├── instance/          # Instance-specific Files
+│   └── diary.db      # SQLite Database
+└── tests/            # Test Files
 │   ├── conftest.py   # Test Configuration
 │   ├── test_user.py  # User Tests
 │   ├── test_entry.py # Entry Tests
 │   └── test_user_manager.py # User Manager Tests
 └── docs/             # Documentation
+    ├── specification.md     # Specifications (English)
+    ├── specification_ja.md  # Specifications (Japanese)
+    ├── diagrams.md         # Design Diagrams (English)
+    └── diagrams_ja.md      # Design Diagrams (Japanese)

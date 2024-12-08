@@ -8,6 +8,7 @@
 ## 更新履歴
 - 2024/12/01: 0.01公開
 - 2024/12/08: モデル構造の改善とテストの追加
+- 2024/12/09: マイグレーション機能の追加
 
 ## 主な機能
 
@@ -20,6 +21,8 @@
 
 - Python 3.11.9
 - Flask 3.1.0
+- SQLAlchemy 2.0
+- Alembic 1.13.0
 - SQLite3
 - HTML/CSS/JavaScript
 
@@ -38,9 +41,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. データベースの初期化と起動
+3. データベースのセットアップ
 ```bash
-python -c "from app import init_db; init_db()"
+# マイグレーションの実行
+alembic upgrade head
+
+# 初期データの作成
+python -c "from models import create_initial_data; create_initial_data()"
+```
+
+4. アプリケーションの起動
+```bash
 python app.py
 ```
 
@@ -71,6 +82,13 @@ pytest
 - ユーザーID: admin
 - パスワード: Admin3210
 
+テストユーザー：
+- ユーザーID: tetsu
+- パスワード: Tetsu3210
+
+- ユーザーID: gento
+- パスワード: Gento3210
+
 ## 制限事項
 
 現在の開発版では以下の制限があります：
@@ -94,6 +112,8 @@ pytest
 /
 ├── app.py              # メインアプリケーション
 ├── database.py         # データベース操作
+├── models.py           # SQLAlchemyモデル定義（統合版）
+├── alembic.ini         # マイグレーション設定
 ├── models/            # モデル定義
 │   ├── __init__.py    # モデルパッケージ初期化
 │   ├── base.py        # 基本クラス定義
@@ -109,9 +129,12 @@ pytest
 │   ├── main.css       # メインスタイル
 │   └── script.js      # クライアントサイドスクリプト
 ├── templates/         # HTMLテンプレート
-├── tests/            # テストファイル
-│   ├── conftest.py   # テスト共通設定
-│   ├── test_user.py  # ユーザーテスト
-│   ├── test_entry.py # 日記エントリーテスト
-│   └── test_user_manager.py # ユーザー管理テスト
-└── docs/             # ドキュメント
+├── migrations/        # マイグレーションファイル
+│   └── versions/      # バージョン管理されたマイグレーション
+├── instance/          # インスタンス固有のファイル
+│   └── diary.db      # SQLiteデータベース
+└── tests/            # テストファイル
+    ├── conftest.py   # テスト共通設定
+    ├── test_user.py  # ユーザーテスト
+    ├── test_entry.py # 日記エントリーテスト
+    └── test_user_manager.py # ユーザー管理テスト

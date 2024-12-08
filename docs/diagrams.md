@@ -3,6 +3,7 @@
 ## Version History
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test configuration additions
+- 2024/12/09: Database structure and migration specification additions
 
 ## 1. Screen Transition Diagram
 
@@ -35,12 +36,13 @@ stateDiagram-v2
     HomePage --> [*]: Logout
 ```
 
-## 5. Class Diagram
+## 2. Class Diagram
 
 ```mermaid
 classDiagram
     class Base {
         <<abstract>>
+        +DeclarativeBase
     }
 
     class User {
@@ -54,6 +56,7 @@ classDiagram
         +int login_attempts
         +datetime last_login_attempt
         +datetime created_at
+        +List[Entry] entries
         +check_password()
         +validate_password()
         +check_lock_status()
@@ -67,6 +70,8 @@ classDiagram
         +string notes
         +datetime created_at
         +datetime updated_at
+        +User user
+        +List[DiaryItem] items
         +update()
     }
 
@@ -76,6 +81,7 @@ classDiagram
         +string item_name
         +string item_content
         +datetime created_at
+        +Entry entry
     }
 
     class UserManager {
@@ -89,12 +95,12 @@ classDiagram
     Base <|-- User
     Base <|-- Entry
     Base <|-- DiaryItem
-    User "1" -- "*" Entry : creates
-    Entry "1" -- "*" DiaryItem : contains
+    User "1" -- "*" Entry : creates >
+    Entry "1" -- "*" DiaryItem : contains >
     UserManager -- User : manages
 ```
 
-## 6. Component Diagram
+## 3. Sequence Diagrams
 
 ### Login Process
 
@@ -221,7 +227,7 @@ graph TB
 ```mermaid
 erDiagram
     users {
-        int id PK
+        int id PK "Auto-increment"
         string userid UK "User ID (4-20 chars)"
         string name "Display Name (3-20 chars)"
         string password "Password (hashed)"
@@ -234,7 +240,7 @@ erDiagram
     }
 
     entries {
-        int id PK
+        int id PK "Auto-increment"
         int user_id FK "Author ID"
         string title "Title"
         text content "Content"
@@ -243,7 +249,16 @@ erDiagram
         datetime updated_at "Update Time"
     }
 
+    diary_items {
+        int id PK "Auto-increment"
+        int entry_id FK "Diary Entry ID"
+        string item_name "Item Name"
+        text item_content "Item Content"
+        datetime created_at "Creation Time"
+    }
+
     users ||--o{ entries : "creates"
+    entries ||--o{ diary_items : "contains"
 ```
 
 ## 6. Activity Diagrams
@@ -327,21 +342,27 @@ graph TB
             L4[diary_item.py]
             L5[user_manager.py]
             L6[init_data.py]
+            L7[models.py]
         end
         M[database.py]
         N[schema.sql]
+        O[alembic.ini]
     end
 
     subgraph Database
-        O[diary.db]
+        P[diary.db]
+    end
+
+    subgraph Migrations
+        Q[versions/]
     end
 
     subgraph Tests
-        P[pytest.ini]
-        Q[test_user.py]
-        R[test_entry.py]
-        S[test_user_manager.py]
-        T[conftest.py]
+        R[pytest.ini]
+        S[test_user.py]
+        T[test_entry.py]
+        U[test_user_manager.py]
+        V[conftest.py]
     end
 
     %% Frontend Dependencies
@@ -373,7 +394,8 @@ graph TB
     L5 --> L2
     K --> M
     M --> N
-    M --> O
+    M --> P
+    O --> Q
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
@@ -387,8 +409,10 @@ graph TB
     style L4 fill:#bfb,stroke:#333,stroke-width:2px
     style L5 fill:#bfb,stroke:#333,stroke-width:2px
     style L6 fill:#bfb,stroke:#333,stroke-width:2px
+    style L7 fill:#bfb,stroke:#333,stroke-width:2px
     style M fill:#bfb,stroke:#333,stroke-width:2px
-    style O fill:#ff9,stroke:#333,stroke-width:2px
+    style O fill:#bfb,stroke:#333,stroke-width:2px
+    style P fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ### Directory Structure
@@ -397,6 +421,8 @@ graph TB
 /
 ├── app.py              # Main Application
 ├── database.py         # Database Operations
+├── models.py           # SQLAlchemy Model Definitions (Unified)
+├── alembic.ini         # Migration Configuration
 ├── models/            # Model Definitions
 │   ├── __init__.py    # Model Package Initialization
 │   ├── base.py        # Base Class Definition
@@ -417,10 +443,11 @@ graph TB
 │   ├── register.html  # Registration Page
 │   ├── settings.html  # User Settings Page
 │   └── admin.html     # Admin Panel
+├── migrations/        # Migration Files
+│   └── versions/      # Version-controlled Migrations
 ├── instance/          # Instance-specific Files
 │   └── diary.db      # SQLite Database
-├── migrations/        # Database Migrations
-├── tests/            # Test Files
+└── tests/            # Test Files
 │   ├── conftest.py   # Test Configuration
 │   ├── test_user.py  # User Tests
 │   ├── test_entry.py # Entry Tests
@@ -430,7 +457,7 @@ graph TB
     ├── specification_ja.md  # Specifications (Japanese)
     ├── diagrams.md         # Design Diagrams (English)
     └── diagrams_ja.md      # Design Diagrams (Japanese)
-```
+    ```
 
 ## 8. Additional Notes: Database Constraints
 
@@ -443,13 +470,21 @@ graph TB
 - `is_locked`: Default false
 - `is_visible`: Default true (false when deactivated)
 - `login_attempts`: Default 0
+- `last_login_attempt`: NULL allowed
 - `created_at`: NOT NULL
 
 ### entries Table
 - `id`: Auto-incrementing primary key
-- `user_id`: Foreign key (users.id), NOT NULL
+- `user_id`: Foreign key (users.id), NOT NULL, ON DELETE CASCADE
 - `title`: NOT NULL
 - `content`: NOT NULL
 - `notes`: NOT NULL, default empty string
 - `created_at`: NOT NULL
 - `updated_at`: NULL allowed (set only on update)
+
+### diary_items Table
+- `id`: Auto-incrementing primary key
+- `entry_id`: Foreign key (entries.id), NOT NULL, ON DELETE CASCADE
+- `item_name`: NOT NULL
+- `item_content`: NOT NULL
+- `created_at`: NOT NULL
