@@ -2,6 +2,7 @@
 
 ## Version History
 - 2024/12/01: Initial release 0.01
+- 2024/12/08: Model structure improvements and test configuration additions
 
 ## 1. Screen Transition Diagram
 
@@ -34,10 +35,14 @@ stateDiagram-v2
     HomePage --> [*]: Logout
 ```
 
-## 2. Class Diagram
+## 5. Class Diagram
 
 ```mermaid
 classDiagram
+    class Base {
+        <<abstract>>
+    }
+
     class User {
         +int id
         +string userid
@@ -49,9 +54,9 @@ classDiagram
         +int login_attempts
         +datetime last_login_attempt
         +datetime created_at
+        +check_password()
         +validate_password()
         +check_lock_status()
-        +deactivate_account()
     }
 
     class Entry {
@@ -62,25 +67,34 @@ classDiagram
         +string notes
         +datetime created_at
         +datetime updated_at
-        +create()
         +update()
-        +delete()
+    }
+
+    class DiaryItem {
+        +int id
+        +int entry_id
+        +string item_name
+        +string item_content
+        +datetime created_at
     }
 
     class UserManager {
+        +get_visible_users()
+        +get_all_users()
         +lock_user()
         +unlock_user()
         +toggle_admin()
-        +update_login_attempts()
-        +get_visible_users()
-        +get_all_users()
     }
 
+    Base <|-- User
+    Base <|-- Entry
+    Base <|-- DiaryItem
     User "1" -- "*" Entry : creates
+    Entry "1" -- "*" DiaryItem : contains
     UserManager -- User : manages
 ```
 
-## 3. Sequence Diagrams
+## 6. Component Diagram
 
 ### Login Process
 
@@ -292,58 +306,89 @@ graph TB
         A[style.css]
         B[admin.css]
         C[user.css]
-        D[script.js]
+        D[main.css]
+        E[script.js]
     end
 
     subgraph Templates
-        E[index.html]
-        F[login.html]
-        G[register.html]
-        H[settings.html]
-        I[admin.html]
+        F[index.html]
+        G[login.html]
+        H[register.html]
+        I[settings.html]
+        J[admin.html]
     end
 
     subgraph Backend
-        J[app.py]
-        K[models.py]
-        L[database.py]
-        M[schema.sql]
+        K[app.py]
+        subgraph Models
+            L1[base.py]
+            L2[user.py]
+            L3[entry.py]
+            L4[diary_item.py]
+            L5[user_manager.py]
+            L6[init_data.py]
+        end
+        M[database.py]
+        N[schema.sql]
     end
 
     subgraph Database
-        N[diary.db]
+        O[diary.db]
+    end
+
+    subgraph Tests
+        P[pytest.ini]
+        Q[test_user.py]
+        R[test_entry.py]
+        S[test_user_manager.py]
+        T[conftest.py]
     end
 
     %% Frontend Dependencies
-    E --> A
     F --> A
     G --> A
     H --> A
-    H --> C
     I --> A
-    I --> B
-
-    %% Template Dependencies
-    E --> D
+    I --> C
+    J --> A
+    J --> B
     F --> D
     G --> D
     H --> D
     I --> D
+    J --> D
+
+    %% Template Dependencies
+    F --> E
+    G --> E
+    H --> E
+    I --> E
+    J --> E
 
     %% Backend Dependencies
-    J --> K
-    J --> L
-    L --> M
-    L --> N
+    K --> L1
+    L2 --> L1
+    L3 --> L1
+    L4 --> L1
+    L5 --> L2
+    K --> M
+    M --> N
+    M --> O
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
     style C fill:#f9f,stroke:#333,stroke-width:2px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style J fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
     style K fill:#bfb,stroke:#333,stroke-width:2px
-    style L fill:#bfb,stroke:#333,stroke-width:2px
-    style N fill:#ff9,stroke:#333,stroke-width:2px
+    style L1 fill:#bfb,stroke:#333,stroke-width:2px
+    style L2 fill:#bfb,stroke:#333,stroke-width:2px
+    style L3 fill:#bfb,stroke:#333,stroke-width:2px
+    style L4 fill:#bfb,stroke:#333,stroke-width:2px
+    style L5 fill:#bfb,stroke:#333,stroke-width:2px
+    style L6 fill:#bfb,stroke:#333,stroke-width:2px
+    style M fill:#bfb,stroke:#333,stroke-width:2px
+    style O fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ### Directory Structure
@@ -351,15 +396,20 @@ graph TB
 ```
 /
 ├── app.py              # Main Application
-├── models.py           # Data Models
 ├── database.py         # Database Operations
-├── schema.sql          # Database Schema
-├── alembic.ini         # Alembic Configuration
-├── requirements.txt    # Package Dependencies
+├── models/            # Model Definitions
+│   ├── __init__.py    # Model Package Initialization
+│   ├── base.py        # Base Class Definition
+│   ├── user.py        # User Model
+│   ├── entry.py       # Diary Entry Model
+│   ├── diary_item.py  # Diary Item Model
+│   ├── user_manager.py # User Management
+│   └── init_data.py   # Initial Data Creation
 ├── static/            # Static Files
 │   ├── style.css      # Common Styles
 │   ├── admin.css      # Admin Panel Styles
 │   ├── user.css       # User Settings Styles
+│   ├── main.css       # Main Styles
 │   └── script.js      # Client-side Scripts
 ├── templates/         # HTML Templates
 │   ├── index.html     # Homepage
@@ -370,8 +420,16 @@ graph TB
 ├── instance/          # Instance-specific Files
 │   └── diary.db      # SQLite Database
 ├── migrations/        # Database Migrations
+├── tests/            # Test Files
+│   ├── conftest.py   # Test Configuration
+│   ├── test_user.py  # User Tests
+│   ├── test_entry.py # Entry Tests
+│   └── test_user_manager.py # User Manager Tests
 └── docs/             # Documentation
-    └── specification.md  # Specifications
+    ├── specification.md     # Specifications (English)
+    ├── specification_ja.md  # Specifications (Japanese)
+    ├── diagrams.md         # Design Diagrams (English)
+    └── diagrams_ja.md      # Design Diagrams (Japanese)
 ```
 
 ## 8. Additional Notes: Database Constraints

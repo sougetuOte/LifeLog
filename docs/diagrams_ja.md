@@ -2,6 +2,7 @@
 
 ## 更新履歴
 - 2024/12/01: 0.01公開
+- 2024/12/08: モデル構造の改善とテスト構成の追加
 
 ## 1. 画面遷移図
 
@@ -38,6 +39,10 @@ stateDiagram-v2
 
 ```mermaid
 classDiagram
+    class Base {
+        <<abstract>>
+    }
+
     class User {
         +int id
         +string userid
@@ -49,9 +54,9 @@ classDiagram
         +int login_attempts
         +datetime last_login_attempt
         +datetime created_at
+        +check_password()
         +validate_password()
         +check_lock_status()
-        +deactivate_account()
     }
 
     class Entry {
@@ -62,21 +67,30 @@ classDiagram
         +string notes
         +datetime created_at
         +datetime updated_at
-        +create()
         +update()
-        +delete()
+    }
+
+    class DiaryItem {
+        +int id
+        +int entry_id
+        +string item_name
+        +string item_content
+        +datetime created_at
     }
 
     class UserManager {
+        +get_visible_users()
+        +get_all_users()
         +lock_user()
         +unlock_user()
         +toggle_admin()
-        +update_login_attempts()
-        +get_visible_users()
-        +get_all_users()
     }
 
+    Base <|-- User
+    Base <|-- Entry
+    Base <|-- DiaryItem
     User "1" -- "*" Entry : creates
+    Entry "1" -- "*" DiaryItem : contains
     UserManager -- User : manages
 ```
 
@@ -202,6 +216,7 @@ graph TB
     管理者 -->|継承| 一般ユーザー
 ```
 
+
 ## 5. ERD（Entity Relationship Diagram）
 
 ```mermaid
@@ -229,7 +244,16 @@ erDiagram
         datetime updated_at "更新日時"
     }
 
+    diary_items {
+        int id PK
+        int entry_id FK "日記エントリーID"
+        string item_name "項目名"
+        text item_content "項目内容"
+        datetime created_at "作成日時"
+    }
+
     users ||--o{ entries : "creates"
+    entries ||--o{ diary_items : "contains"
 ```
 
 ## 6. アクティビティ図
@@ -292,58 +316,89 @@ graph TB
         A[style.css]
         B[admin.css]
         C[user.css]
-        D[script.js]
+        D[main.css]
+        E[script.js]
     end
 
     subgraph テンプレート
-        E[index.html]
-        F[login.html]
-        G[register.html]
-        H[settings.html]
-        I[admin.html]
+        F[index.html]
+        G[login.html]
+        H[register.html]
+        I[settings.html]
+        J[admin.html]
     end
 
     subgraph バックエンド
-        J[app.py]
-        K[models.py]
-        L[database.py]
-        M[schema.sql]
+        K[app.py]
+        subgraph モデル
+            L1[base.py]
+            L2[user.py]
+            L3[entry.py]
+            L4[diary_item.py]
+            L5[user_manager.py]
+            L6[init_data.py]
+        end
+        M[database.py]
+        N[schema.sql]
     end
 
     subgraph データベース
-        N[diary.db]
+        O[diary.db]
+    end
+
+    subgraph テスト
+        P[pytest.ini]
+        Q[test_user.py]
+        R[test_entry.py]
+        S[test_user_manager.py]
+        T[conftest.py]
     end
 
     %% フロントエンド依存関係
-    E --> A
     F --> A
     G --> A
     H --> A
-    H --> C
     I --> A
-    I --> B
-
-    %% テンプレート依存関係
-    E --> D
+    I --> C
+    J --> A
+    J --> B
     F --> D
     G --> D
     H --> D
     I --> D
+    J --> D
+
+    %% テンプレート依存関係
+    F --> E
+    G --> E
+    H --> E
+    I --> E
+    J --> E
 
     %% バックエンド依存関係
-    J --> K
-    J --> L
-    L --> M
-    L --> N
+    K --> L1
+    L2 --> L1
+    L3 --> L1
+    L4 --> L1
+    L5 --> L2
+    K --> M
+    M --> N
+    M --> O
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#f9f,stroke:#333,stroke-width:2px
     style C fill:#f9f,stroke:#333,stroke-width:2px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style J fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#bbf,stroke:#333,stroke-width:2px
     style K fill:#bfb,stroke:#333,stroke-width:2px
-    style L fill:#bfb,stroke:#333,stroke-width:2px
-    style N fill:#ff9,stroke:#333,stroke-width:2px
+    style L1 fill:#bfb,stroke:#333,stroke-width:2px
+    style L2 fill:#bfb,stroke:#333,stroke-width:2px
+    style L3 fill:#bfb,stroke:#333,stroke-width:2px
+    style L4 fill:#bfb,stroke:#333,stroke-width:2px
+    style L5 fill:#bfb,stroke:#333,stroke-width:2px
+    style L6 fill:#bfb,stroke:#333,stroke-width:2px
+    style M fill:#bfb,stroke:#333,stroke-width:2px
+    style O fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 ### ディレクトリ構造
@@ -351,15 +406,20 @@ graph TB
 ```
 /
 ├── app.py              # メインアプリケーション
-├── models.py           # データモデル
 ├── database.py         # データベース操作
-├── schema.sql          # データベーススキーマ
-├── alembic.ini         # Alembicの設定
-├── requirements.txt    # 依存パッケージリスト
+├── models/            # モデル定義
+│   ├── __init__.py    # モデルパッケージ初期化
+│   ├── base.py        # 基本クラス定義
+│   ├── user.py        # ユーザーモデル
+│   ├── entry.py       # 日記エントリーモデル
+│   ├── diary_item.py  # 日記項目モデル
+│   ├── user_manager.py # ユーザー管理機能
+│   └── init_data.py   # 初期データ作成
 ├── static/            # 静的ファイル
 │   ├── style.css      # 共通スタイル
 │   ├── admin.css      # 管理画面スタイル
 │   ├── user.css       # ユーザー設定スタイル
+│   ├── main.css       # メインスタイル
 │   └── script.js      # クライアントサイドスクリプト
 ├── templates/         # HTMLテンプレート
 │   ├── index.html     # トップページ
@@ -370,8 +430,16 @@ graph TB
 ├── instance/          # インスタンス固有のファイル
 │   └── diary.db      # SQLiteデータベース
 ├── migrations/        # データベースマイグレーション
+├── tests/            # テストファイル
+│   ├── conftest.py   # テスト共通設定
+│   ├── test_user.py  # ユーザーテスト
+│   ├── test_entry.py # 日記エントリーテスト
+│   └── test_user_manager.py # ユーザー管理テスト
 └── docs/             # ドキュメント
-    └── specification.md  # 仕様書
+    ├── specification.md     # 仕様書（英語）
+    ├── specification_ja.md  # 仕様書（日本語）
+    ├── diagrams.md         # 設計図（英語）
+    └── diagrams_ja.md      # 設計図（日本語）
 ```
 
 ## 8. 補足：データベース制約
@@ -395,3 +463,4 @@ graph TB
 - `notes`: NOT NULL、デフォルト空文字列
 - `created_at`: NOT NULL
 - `updated_at`: NULL許容（更新時のみ設定）
+

@@ -2,13 +2,17 @@
 
 ## Version History
 - 2024/12/01: Initial release 0.01
+- 2024/12/08: Model structure improvements and test specification additions
 
 ## Table of Contents
 1. [User Management](#1-user-management)
 2. [Diary Management](#2-diary-management)
 3. [Screen Specifications](#3-screen-specifications)
 4. [Database Design](#4-database-design)
-5. [Security Specifications](#5-security-specifications)
+5. [Model Structure](#5-model-structure)
+6. [Security Specifications](#6-security-specifications)
+7. [Test Specifications](#7-test-specifications)
+8. [Important Notes](#8-important-notes)
 
 ## 1. User Management
 
@@ -168,23 +172,107 @@ CREATE TABLE entries (
 );
 ```
 
-## 5. Security Specifications
+## 5. Model Structure
 
-### 5.1 Account Security
-- Password complexity requirements
-- Login attempt limits
-- Account lockout functionality
-- Password verification for account deactivation
+### 5.1 Basic Structure
+- Base: Base class for all models
+  - Inherits from SQLAlchemy's DeclarativeBase
 
-### 5.2 Access Control
-- Session-based authentication
-- Role-based access control
-- CSRF protection (Flask built-in feature)
-- Deactivated users' entries accessible only to administrators
+### 5.2 Model Classes
+1. User: User information management
+   - Basic attributes (ID, user ID, name, password)
+   - Status flags (admin, lock, visibility)
+   - Login attempt tracking (attempt count, last attempt time)
+   - Password verification functionality
+   - Lock status check functionality
 
-## 6. Important Notes
+2. Entry: Diary entry management
+   - Basic attributes (ID, user ID, title, content, notes)
+   - Timestamps (creation time, update time)
+   - Update functionality
 
-### 6.1 Development Environment Usage
+3. DiaryItem: Diary item management
+   - Basic attributes (ID, entry ID, item name, item content)
+   - Timestamp (creation time)
+
+4. UserManager: User management functionality
+   - User list retrieval (visible users/all users)
+   - Account lock management
+   - Administrator privilege management
+
+### 5.3 Module Structure
+```
+models/
+├── __init__.py    # Model package initialization
+├── base.py        # Base class definition
+├── user.py        # User model
+├── entry.py       # Diary entry model
+├── diary_item.py  # Diary item model
+├── user_manager.py # User management
+└── init_data.py   # Initial data creation
+```
+
+## 6. Security Specifications
+
+[Security specifications remain unchanged]
+
+## 7. Test Specifications
+
+### 7.1 Test Configuration
+- pytest.ini configuration
+  - Test path: tests/
+  - Test file naming convention: test_*.py
+  - Coverage report settings
+- conftest.py test fixture definitions
+  - Flask application configuration
+  - Database configuration
+  - Session management
+- Individual test modules
+  - test_user.py: User-related functionality tests (100% coverage)
+  - test_entry.py: Diary entry functionality tests (96% coverage)
+  - test_user_manager.py: User management functionality tests (100% coverage)
+
+### 7.2 Test Coverage
+- User authentication and registration
+  - User creation
+  - Password verification
+  - Lock functionality
+- Diary entry management
+  - Entry creation
+  - Validation
+  - Update processing
+- User management
+  - User visibility control
+  - Administrator privilege operations
+  - Lock operations
+
+### 7.3 Test Environment
+- Test dependencies managed by requirements-test.txt
+  - pytest 7.4.0
+  - pytest-cov 4.1.0
+  - coverage 7.3.0
+- Test database
+  - SQLite (in-memory)
+  - Automatic creation and deletion
+- Test fixtures
+  - Session management
+  - Transaction control
+  - Rollback functionality
+
+### 7.4 Coverage Statistics
+- Model layer: 90%+ coverage
+  - User: 92%
+  - Entry: 96%
+  - DiaryItem: 93%
+  - UserManager: 73%
+- Areas needing improvement
+  - Application layer (app.py)
+  - Database operations (database.py)
+  - Initial data creation (init_data.py)
+
+## 8. Important Notes
+
+### 8.1 Development Environment Usage
 - This application is for development environment use only
 - The following measures are required for production deployment:
   - Secure session key configuration
@@ -193,8 +281,8 @@ CREATE TABLE entries (
   - Database backup strategy
   - Enhanced error handling
 
-### 6.2 Limitations
+### 8.2 Limitations
 - No file upload functionality
 - No pagination support
 - No password reset feature
-- No account deactivation reversal
+- No account deletion reversal

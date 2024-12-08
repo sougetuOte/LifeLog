@@ -7,6 +7,7 @@ A simple diary posting and management system with user authentication, featuring
 
 ## Version History
 - 2024/12/01: Initial release 0.01
+- 2024/12/08: Model structure improvements and test additions
 
 ## Key Features
 
@@ -45,6 +46,25 @@ python app.py
 
 After starting the application, access http://127.0.0.1:5000 in your browser.
 
+## Running Tests
+
+1. Install Test Dependencies
+```bash
+pip install -r requirements-test.txt
+```
+
+2. Run Tests
+```bash
+pytest
+```
+
+The tests cover the following areas:
+- User Authentication and Registration (90%+ coverage)
+- Diary Entry Creation, Editing, and Deletion (90%+ coverage)
+- User Management (90%+ coverage)
+- Access Control
+- Database Operations
+
 ## Default Account
 
 Administrator Account:
@@ -64,4 +84,34 @@ The current development version has the following limitations:
 
 ## Detailed Specifications
 
-For detailed application specifications, please refer to the [specification document](docs/specification.md).
+For detailed application specifications, please refer to the following documents:
+- [Specification (English)](docs/specification.md)
+- [Design Diagrams (English)](docs/diagrams.md)
+
+## Project Structure
+
+```
+/
+├── app.py              # Main Application
+├── database.py         # Database Operations
+├── models/            # Model Definitions
+│   ├── __init__.py    # Model Package Initialization
+│   ├── base.py        # Base Class Definition
+│   ├── user.py        # User Model
+│   ├── entry.py       # Diary Entry Model
+│   ├── diary_item.py  # Diary Item Model
+│   ├── user_manager.py # User Management
+│   └── init_data.py   # Initial Data Creation
+├── static/            # Static Files
+│   ├── style.css      # Common Styles
+│   ├── admin.css      # Admin Panel Styles
+│   ├── user.css       # User Settings Styles
+│   ├── main.css       # Main Styles
+│   └── script.js      # Client-side Scripts
+├── templates/         # HTML Templates
+├── tests/            # Test Files
+│   ├── conftest.py   # Test Configuration
+│   ├── test_user.py  # User Tests
+│   ├── test_entry.py # Entry Tests
+│   └── test_user_manager.py # User Manager Tests
+└── docs/             # Documentation
