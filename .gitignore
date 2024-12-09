@@ -16,6 +16,9 @@ ENV/
 instance/
 .webassets-cache
 
+# node.js
+node_modules/
+
 # Database
 *.db
 *.sqlite3
