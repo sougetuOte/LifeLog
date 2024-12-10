@@ -254,7 +254,11 @@ def get_users():
 @admin_required
 def unlock_user(user_id):
     logger.debug('Unlock user request received: %d', user_id)
-    user = db.session.get_or_404(User, user_id)
+    stmt = select(User).filter_by(id=user_id)
+    user = db.session.execute(stmt).scalar_one_or_none()
+    if not user:
+        return jsonify({'error': 'ユーザーが見つかりません'}), 404
+    
     user.is_locked = False
     user.login_attempts = 0
     user.last_login_attempt = None
@@ -266,7 +270,11 @@ def unlock_user(user_id):
 @admin_required
 def toggle_admin(user_id):
     logger.debug('Toggle admin status request received: %d', user_id)
-    user = db.session.get_or_404(User, user_id)
+    stmt = select(User).filter_by(id=user_id)
+    user = db.session.execute(stmt).scalar_one_or_none()
+    if not user:
+        return jsonify({'error': 'ユーザーが見つかりません'}), 404
+    
     user.is_admin = not user.is_admin
     db.session.commit()
     logger.debug('Admin status toggled: %s', user.is_admin)
@@ -276,7 +284,10 @@ def toggle_admin(user_id):
 @admin_required
 def toggle_visibility(user_id):
     logger.debug('Toggle visibility request received: %d', user_id)
-    user = db.session.get_or_404(User, user_id)
+    stmt = select(User).filter_by(id=user_id)
+    user = db.session.execute(stmt).scalar_one_or_none()
+    if not user:
+        return jsonify({'error': 'ユーザーが見つかりません'}), 404
     
     # 管理者は削除できない
     if user.is_admin:
