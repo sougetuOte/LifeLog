@@ -37,43 +37,80 @@
     </div>
 
     <script>
+        // デバッグログ用の関数
+        function debugLog(message, data = null) {
+            const timestamp = new Date().toISOString();
+            console.log(`[${timestamp}] ${message}`);
+            if (data) {
+                console.log('Data:', data);
+            }
+        }
+
+        // CSRFトークンの取得
+        function getCsrfToken() {
+            const name = 'csrf_token';
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return null;
+        }
+
         async function login() {
+            debugLog('Login function called');
             const userid = document.getElementById('userid').value.trim();
             const password = document.getElementById('password').value;
 
+            debugLog('Form values:', { userid, password: '********' });
+
             if (!userid || !password) {
+                debugLog('Validation failed: Empty fields');
                 showError('ユーザーIDとパスワードを入力してください');
                 return;
             }
 
             try {
+                debugLog('Sending login request');
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()  // CSRFトークンを追加
                     },
                     body: JSON.stringify({ userid, password })
                 });
 
+                debugLog('Response received', {
+                    status: response.status,
+                    statusText: response.statusText
+                });
+
                 const data = await response.json();
+                debugLog('Response data:', data);
                 
                 if (response.ok) {
+                    debugLog('Login successful, redirecting to home');
                     window.location.href = '/';
                 } else {
+                    debugLog('Login failed:', data.error);
                     showError(data.error || 'ログインに失敗しました');
                 }
             } catch (error) {
+                debugLog('Error during login:', error);
                 console.error('Error:', error);
                 showError('エラーが発生しました');
             }
         }
 
         function showError(message) {
+            debugLog('Showing error message:', message);
             const errorMessage = document.getElementById('error-message');
             errorMessage.textContent = message;
             errorMessage.style.display = 'block';
             
             setTimeout(() => {
+                debugLog('Hiding error message');
                 errorMessage.style.display = 'none';
             }, 5000);
         }
@@ -81,8 +118,15 @@
         // Enterキーでログイン
         document.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                debugLog('Enter key pressed, triggering login');
                 login();
             }
+        });
+
+        // ページ読み込み完了時のログ
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('Login page loaded');
+            console.log('Debug mode enabled - check browser console for detailed logs');
         });
     </script>
 </body>

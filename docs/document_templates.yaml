@@ -10,89 +10,392 @@ document_sync:
     - docs/specification.md
     - docs/specification_ja.md
   sections:
-    version_history:
-      template: |
-        ## Version History / 更新履歴
-        - 2024/12/01: Initial release 0.01 / 0.01公開
-        - 2024/12/08: Model structure improvements and test additions / モデル構造の改善とテストの追加
-        - 2024/12/09: Migration functionality added / マイグレーション機能の追加
-        - 2024/12/10: Development environment changed to conda-based / 開発環境をcondaベースに変更
-      notes: |
-        - 両言語で同じ更新履歴を維持
-        - 日付形式の統一
-        - 変更内容の明確な記述
+    readme:
+      files:
+        en:
+          - README.md
+        ja:
+          - README_JA.md
+      template:
+        en: |
+          # LifeLog
 
-    security_spec:
-      template: |
-        ## Security Specifications / セキュリティ仕様
-        ### Authentication and Authorization / 認証と認可
-        1. Session Management
-        2. Password Security
-        3. Access Control
+          ## Overview
+          LifeLog is a diary management system that allows users to record and manage their daily activities.
+          
+          ## Features
+          - User authentication and management
+          - Diary entry creation and management
+          - Multi-language support (English/Japanese)
+          
+          ## Installation
+          ```bash
+          # Create conda environment
+          conda create -n lifelog python=3.11.10
+          conda activate lifelog
+          
+          # Install dependencies
+          pip install -r requirements.txt
+          
+          # Initialize database
+          python create_data.py
+          ```
+          
+          ## Usage
+          ```bash
+          # Start development server
+          python app.py
+          ```
+          
+          Access http://localhost:5000 in your web browser.
+          
+          ## Version History
+          - 2024/12/01: Initial release 0.01
+          - 2024/12/08: Model structure improvements and test additions
+          - 2024/12/09: Migration functionality added
+          - 2024/12/10: Development environment changed to conda-based
+        ja: |
+          # LifeLog
 
-        ### Account Security / アカウントセキュリティ
-        1. Login Protection
-        2. Account Management
+          ## 概要
+          LifeLogは、ユーザーが日々の活動を記録・管理できる日記管理システムです。
+          
+          ## 機能
+          - ユーザー認証と管理
+          - 日記エントリの作成と管理
+          - 多言語対応（英語/日本語）
+          
+          ## インストール
+          ```bash
+          # conda環境の作成
+          conda create -n lifelog python=3.11.10
+          conda activate lifelog
+          
+          # 依存関係のインストール
+          pip install -r requirements.txt
+          
+          # データベースの初期化
+          python create_data.py
+          ```
+          
+          ## 使用方法
+          ```bash
+          # 開発サーバーの起動
+          python app.py
+          ```
+          
+          Webブラウザで http://localhost:5000 にアクセスしてください。
+          
+          ## 更新履歴
+          - 2024/12/01: 0.01公開
+          - 2024/12/08: モデル構造の改善とテストの追加
+          - 2024/12/09: マイグレーション機能の追加
+          - 2024/12/10: 開発環境をcondaベースに変更
 
-        ### Data Security / データセキュリティ
-        1. Data Access Control
-        2. Database Security
+    diagrams:
+      files:
+        en:
+          - docs/diagrams.md
+        ja:
+          - docs/diagrams_ja.md
+      template:
+        en: |
+          # System Diagrams
 
-        ### Web Security / Webセキュリティ
-        1. CSRF Protection
-        2. Security Headers
-        3. Error Handling
+          ## Database ER Diagram
+          ```mermaid
+          erDiagram
+              users ||--o{ entries : creates
+              entries ||--o{ diary_items : contains
+              
+              users {
+                  integer id PK
+                  string userid
+                  string name
+                  string password
+                  boolean is_admin
+                  boolean is_locked
+                  boolean is_visible
+                  integer login_attempts
+                  datetime last_login_attempt
+                  datetime created_at
+              }
+              
+              entries {
+                  integer id PK
+                  integer user_id FK
+                  string title
+                  string content
+                  string notes
+                  datetime created_at
+                  datetime updated_at
+              }
+              
+              diary_items {
+                  integer id PK
+                  integer entry_id FK
+                  string item_name
+                  string item_content
+                  datetime created_at
+              }
+          ```
 
-        ### Production Requirements / 本番環境要件
-        1. Environment Security
-        2. Monitoring and Logging
-      notes: |
-        - セキュリティ要件の完全な記述
-        - 両言語での正確な対応
-        - 実装状況の反映
+          ## Class Diagram
+          ```mermaid
+          classDiagram
+              class User {
+                  +int id
+                  +str userid
+                  +str name
+                  +str password
+                  +bool is_admin
+                  +bool is_locked
+                  +bool is_visible
+                  +int login_attempts
+                  +datetime last_login_attempt
+                  +datetime created_at
+                  +verify_password()
+                  +check_lock_status()
+              }
+              
+              class Entry {
+                  +int id
+                  +int user_id
+                  +str title
+                  +str content
+                  +str notes
+                  +datetime created_at
+                  +datetime updated_at
+                  +update()
+              }
+              
+              class DiaryItem {
+                  +int id
+                  +int entry_id
+                  +str item_name
+                  +str item_content
+                  +datetime created_at
+              }
+              
+              User "1" --> "*" Entry
+              Entry "1" --> "*" DiaryItem
+          ```
 
-    database_design:
-      template: |
-        ## Database Design / データベース設計
-        ### Tables / テーブル
-        - users
-        - entries
-        - diary_items
+          ## Version History
+          - 2024/12/01: Initial release 0.01
+          - 2024/12/08: Model structure improvements and test additions
+          - 2024/12/09: Migration functionality added
+          - 2024/12/10: Development environment changed to conda-based
+        ja: |
+          # システム構成図
 
-        ### Migration Management / マイグレーション管理
-        - Using Alembic
-        - Version control
-        - Configuration
-      notes: |
-        - スキーマの完全な定義
-        - リレーションシップの明確化
-        - 制約条件の詳細
+          ## データベースER図
+          ```mermaid
+          erDiagram
+              users ||--o{ entries : creates
+              entries ||--o{ diary_items : contains
+              
+              users {
+                  integer id PK
+                  string userid
+                  string name
+                  string password
+                  boolean is_admin
+                  boolean is_locked
+                  boolean is_visible
+                  integer login_attempts
+                  datetime last_login_attempt
+                  datetime created_at
+              }
+              
+              entries {
+                  integer id PK
+                  integer user_id FK
+                  string title
+                  string content
+                  string notes
+                  datetime created_at
+                  datetime updated_at
+              }
+              
+              diary_items {
+                  integer id PK
+                  integer entry_id FK
+                  string item_name
+                  string item_content
+                  datetime created_at
+              }
+          ```
 
-    model_structure:
-      template: |
-        ## Model Structure / モデル構造
-        ### Basic Structure / 基本構造
-        - Base classes
-        - Inheritance
-        - Relationships
+          ## クラス図
+          ```mermaid
+          classDiagram
+              class User {
+                  +int id
+                  +str userid
+                  +str name
+                  +str password
+                  +bool is_admin
+                  +bool is_locked
+                  +bool is_visible
+                  +int login_attempts
+                  +datetime last_login_attempt
+                  +datetime created_at
+                  +verify_password()
+                  +check_lock_status()
+              }
+              
+              class Entry {
+                  +int id
+                  +int user_id
+                  +str title
+                  +str content
+                  +str notes
+                  +datetime created_at
+                  +datetime updated_at
+                  +update()
+              }
+              
+              class DiaryItem {
+                  +int id
+                  +int entry_id
+                  +str item_name
+                  +str item_content
+                  +datetime created_at
+              }
+              
+              User "1" --> "*" Entry
+              Entry "1" --> "*" DiaryItem
+          ```
 
-        ### Model Classes / モデルクラス
-        1. User
-        2. Entry
-        3. DiaryItem
-        4. UserManager
-      notes: |
-        - クラス構造の一貫性
-        - メソッドの完全な記述
-        - リレーションシップの詳細
+          ## 更新履歴
+          - 2024/12/01: 0.01公開
+          - 2024/12/08: モデル構造の改善とテストの追加
+          - 2024/12/09: マイグレーション機能の追加
+          - 2024/12/10: 開発環境をcondaベースに変更
+
+    specification:
+      files:
+        en:
+          - docs/specification.md
+        ja:
+          - docs/specification_ja.md
+      template:
+        en: |
+          # LifeLog Specification
+
+          ## Version History
+          - 2024/12/01: Initial release 0.01
+          - 2024/12/08: Model structure improvements and test additions
+          - 2024/12/09: Migration functionality added
+          - 2024/12/10: Development environment changed to conda-based
+
+          ## Security Specifications
+          ### Authentication and Authorization
+          1. Session Management
+          2. Password Security
+          3. Access Control
+
+          ### Account Security
+          1. Login Protection
+          2. Account Management
+
+          ### Data Security
+          1. Data Access Control
+          2. Database Security
+
+          ### Web Security
+          1. CSRF Protection
+          2. Security Headers
+          3. Error Handling
+
+          ### Production Requirements
+          1. Environment Security
+          2. Monitoring and Logging
+
+          ## Database Design
+          ### Tables
+          - users
+          - entries
+          - diary_items
+
+          ### Migration Management
+          - Using Alembic
+          - Version control
+          - Configuration
+
+          ## Model Structure
+          ### Basic Structure
+          - Base classes
+          - Inheritance
+          - Relationships
+
+          ### Model Classes
+          1. User
+          2. Entry
+          3. DiaryItem
+          4. UserManager
+        ja: |
+          # LifeLog仕様書
+
+          ## 更新履歴
+          - 2024/12/01: 0.01公開
+          - 2024/12/08: モデル構造の改善とテストの追加
+          - 2024/12/09: マイグレーション機能の追加
+          - 2024/12/10: 開発環境をcondaベースに変更
+
+          ## セキュリティ仕様
+          ### 認証と認可
+          1. セッション管理
+          2. パスワードセキュリティ
+          3. アクセス制御
+
+          ### アカウントセキュリティ
+          1. ログイン保護
+          2. アカウント管理
+
+          ### データセキュリティ
+          1. データアクセス制御
+          2. データベースセキュリティ
+
+          ### Webセキュリティ
+          1. CSRF保護
+          2. セキュリティヘッダー
+          3. エラー処理
+
+          ### 本番環境要件
+          1. 環境セキュリティ
+          2. 監視とログ記録
+
+          ## データベース設計
+          ### テーブル
+          - users
+          - entries
+          - diary_items
+
+          ### マイグレーション管理
+          - Alembicの使用
+          - バージョン管理
+          - 設定
+
+          ## モデル構造
+          ### 基本構造
+          - 基本クラス
+          - 継承
+          - リレーションシップ
+
+          ### モデルクラス
+          1. User
+          2. Entry
+          3. DiaryItem
+          4. UserManager
 
 execution_order:
-  1: "バージョン履歴の更新"
-  2: "セキュリティ仕様の同期"
-  3: "データベース設計の更新"
-  4: "モデル構造の同期"
-  5: "相互参照の確認"
-  6: "フォーマットの統一"
+  1: "READMEの更新"
+  2: "図表の更新"
+  3: "仕様書の更新"
+  4: "相互参照の確認"
+  5: "フォーマットの統一"
 
 validation_rules:
   - 両言語バージョンの内容一致

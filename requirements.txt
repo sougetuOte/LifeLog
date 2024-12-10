@@ -10,3 +10,5 @@ Flask-SQLAlchemy==3.1.1
 alembic==1.14.0
 pyppeteer==2.0.0
 pyyaml==6.0.2
+Flask-WTF==1.2.1
+WTForms==3.1.2
