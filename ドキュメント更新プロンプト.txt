@@ -1,0 +1,3 @@
+README_JA.md、docs\diagrams_ja.md、docs\specification_ja.mdを更新してください。プロジェクト全体を見直して確実に更新してください。内容が変わってない部分は省略で構いませんが、「2.2から3.5まで変更無し」のように分かりやすくコメントを付けてください。
+
+README_JA.md、docs\diagrams_ja.md、docs\specification_ja.mdを英訳し、README.md、docs\diagrams.md、docs\specification.mdに反映してください。内容が変わってない部分は省略で構いませんが、日本語で「2.2から3.5まで変更無し」のように分かりやすくコメントを付けてください。
