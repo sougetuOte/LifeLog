@@ -22,6 +22,10 @@ class DiaryItem(db.Model, Base):
     entry: Mapped["Entry"] = relationship("Entry", back_populates="items")
 
     def __init__(self, **kwargs):
+        # entryオブジェクトが渡された場合、entry_idを設定
+        if 'entry' in kwargs and hasattr(kwargs['entry'], 'id'):
+            kwargs['entry_id'] = kwargs['entry'].id
+
         # 必須フィールドの存在チェック
         if 'entry_id' not in kwargs:
             raise ValueError('Entry ID cannot be None')

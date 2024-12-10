@@ -1,0 +1,3 @@
+[run]
+omit = 
+    lifelog_all_merge.py

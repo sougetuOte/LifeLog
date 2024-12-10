@@ -58,6 +58,7 @@ def create_initial_data():
             created_at=datetime.now()
         )
         db.session.add(admin_entry)
+        db.session.commit()
 
     tetsu_entry1 = db.session.execute(
         select(Entry).filter_by(user_id=tetsu.id, title='試合に向けて本格始動')
@@ -72,6 +73,8 @@ def create_initial_data():
             created_at=datetime.now()
         )
         db.session.add(tetsu_entry1)
+        # 先にEntryを保存してIDを取得
+        db.session.commit()
 
         # 活動項目の追加
         tetsu_items = [
