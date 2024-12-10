@@ -30,6 +30,13 @@ class User(db.Model, Base):
         if 'password' not in kwargs:
             raise ValueError('Password cannot be None')
         
+        # デフォルト値の設定
+        kwargs.setdefault('is_admin', False)
+        kwargs.setdefault('is_locked', False)
+        kwargs.setdefault('is_visible', True)
+        kwargs.setdefault('login_attempts', 0)
+        kwargs.setdefault('created_at', datetime.now())
+        
         super().__init__(**kwargs)
 
     @validates('userid')

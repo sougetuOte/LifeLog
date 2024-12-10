@@ -4,206 +4,291 @@ from models.entry import Entry
 from models.user import User
 from models.diary_item import DiaryItem
 from database import db
-from sqlalchemy import text
 
-@pytest.fixture(autouse=True)
-def cleanup_database(app):
-    """各テストの前にデータベースをクリーンアップ"""
-    db.session.execute(text('DELETE FROM diary_items'))
-    db.session.execute(text('DELETE FROM entries'))
-    db.session.execute(text('DELETE FROM users'))
-    db.session.commit()
-    yield
+class TestEntry:
+    def setup_method(self):
+        """各テストメソッドの前にデータベースをクリアし、テストユーザーを作成"""
+        with db.session() as session:
+            # テストユーザーを作成
+            self.user = User(
+                userid='test_user',
+                name='Test User',
+                password='TestPass123',
+                created_at=datetime.now()
+            )
+            session.add(self.user)
+            session.commit()
+            self.user_id = self.user.id
 
-@pytest.fixture
-def test_user(app):
-    """テストユーザーのフィクスチャ"""
-    user = User(
-        userid="testuser",
-        name="Test User",
-        password="password123",
-        is_admin=False,
-        is_visible=True
-    )
-    db.session.add(user)
-    db.session.commit()
-    return user
+    def teardown_method(self):
+        """各テストメソッドの後にデータベースをクリア"""
+        with db.session() as session:
+            session.query(DiaryItem).delete()
+            session.query(Entry).delete()
+            session.query(User).delete()
+            session.commit()
 
-def test_entry_init():
-    """エントリーの初期化テスト"""
-    # 最小限の引数で初期化
-    entry = Entry(user_id=1, title="Test Title", content="Test Content")
-    assert entry.title == "Test Title"
-    assert entry.content == "Test Content"
-    assert entry.notes == ""  # デフォルト値
-    assert isinstance(entry.created_at, datetime)
-    assert entry.updated_at is None
+    def test_create_entry_with_valid_data(self, app):
+        """有効なデータでのEntry作成テスト"""
+        with app.app_context():
+            entry = Entry(
+                user_id=self.user_id,
+                title='Test Entry',
+                content='Test Content'
+            )
+            assert entry.user_id == self.user_id
+            assert entry.title == 'Test Entry'
+            assert entry.content == 'Test Content'
+            assert entry.notes == ''  # デフォルト値
+            assert isinstance(entry.created_at, datetime)
+            assert entry.updated_at is None
 
-    # 全ての引数を指定
-    now = datetime.now()
-    entry = Entry(
-        user_id=1,
-        title="Test Title",
-        content="Test Content",
-        notes="Test Notes",
-        created_at=now
-    )
-    assert entry.title == "Test Title"
-    assert entry.content == "Test Content"
-    assert entry.notes == "Test Notes"
-    assert entry.created_at == now
+    def test_create_entry_with_all_fields(self, app):
+        """全フィールドを指定したEntry作成テスト"""
+        with app.app_context():
+            now = datetime.now()
+            entry = Entry(
+                user_id=self.user_id,
+                title='Test Entry',
+                content='Test Content',
+                notes='Test Notes',
+                created_at=now
+            )
+            assert entry.notes == 'Test Notes'
+            assert entry.created_at == now
 
-def test_entry_repr():
-    """__repr__のテスト"""
-    entry = Entry(user_id=1, title="Test Title", content="Test Content")
-    assert repr(entry) == "<Entry Test Title>"
+    def test_validate_title(self, app):
+        """titleのバリデーションテスト"""
+        with app.app_context():
+            # Noneの場合
+            with pytest.raises(ValueError, match='Title cannot be None'):
+                Entry(
+                    user_id=self.user_id,
+                    title=None,
+                    content='Test Content'
+                )
 
-def test_validate_title():
-    """タイトルのバリデーションテスト"""
-    # 正常なタイトル
-    entry = Entry(user_id=1, title="Valid Title", content="Test Content")
-    assert entry.title == "Valid Title"
+            # 数値の場合
+            with pytest.raises(ValueError, match='Title must be a string'):
+                Entry(
+                    user_id=self.user_id,
+                    title=123,
+                    content='Test Content'
+                )
 
-    # 無効なタイトル
-    with pytest.raises(ValueError, match="Title cannot be None"):
-        Entry(user_id=1, title=None, content="Test Content")
+            # 空文字の場合
+            with pytest.raises(ValueError, match='Title cannot be empty'):
+                Entry(
+                    user_id=self.user_id,
+                    title='',
+                    content='Test Content'
+                )
 
-    with pytest.raises(ValueError, match="Title must be a string"):
-        Entry(user_id=1, title=123, content="Test Content")
+            # スペースのみの場合
+            with pytest.raises(ValueError, match='Title cannot be empty'):
+                Entry(
+                    user_id=self.user_id,
+                    title='   ',
+                    content='Test Content'
+                )
 
-    with pytest.raises(ValueError, match="Title cannot be empty"):
-        Entry(user_id=1, title="", content="Test Content")
+            # 100文字を超える場合
+            with pytest.raises(ValueError, match='Title must be 100 characters or less'):
+                Entry(
+                    user_id=self.user_id,
+                    title='a' * 101,
+                    content='Test Content'
+                )
 
-    with pytest.raises(ValueError, match="Title cannot be empty"):
-        Entry(user_id=1, title="   ", content="Test Content")
+    def test_validate_content(self, app):
+        """contentのバリデーションテスト"""
+        with app.app_context():
+            # Noneの場合
+            with pytest.raises(ValueError, match='Content cannot be None'):
+                Entry(
+                    user_id=self.user_id,
+                    title='Test Title',
+                    content=None
+                )
 
-    with pytest.raises(ValueError, match="Title must be 100 characters or less"):
-        Entry(user_id=1, title="a" * 101, content="Test Content")
+            # 数値の場合
+            with pytest.raises(ValueError, match='Content must be a string'):
+                Entry(
+                    user_id=self.user_id,
+                    title='Test Title',
+                    content=123
+                )
 
-def test_validate_content():
-    """コンテンツのバリデーションテスト"""
-    # 正常なコンテンツ
-    entry = Entry(user_id=1, title="Test Title", content="Valid Content")
-    assert entry.content == "Valid Content"
+            # 空文字の場合
+            with pytest.raises(ValueError, match='Content cannot be empty'):
+                Entry(
+                    user_id=self.user_id,
+                    title='Test Title',
+                    content=''
+                )
 
-    # 無効なコンテンツ
-    with pytest.raises(ValueError, match="Content cannot be None"):
-        Entry(user_id=1, title="Test Title", content=None)
+            # スペースのみの場合
+            with pytest.raises(ValueError, match='Content cannot be empty'):
+                Entry(
+                    user_id=self.user_id,
+                    title='Test Title',
+                    content='   '
+                )
 
-    with pytest.raises(ValueError, match="Content must be a string"):
-        Entry(user_id=1, title="Test Title", content=123)
+    def test_validate_notes(self, app):
+        """notesのバリデーションテスト"""
+        with app.app_context():
+            # Noneの場合（空文字に変換される）
+            entry = Entry(
+                user_id=self.user_id,
+                title='Test Title',
+                content='Test Content',
+                notes=None
+            )
+            assert entry.notes == ''
 
-    with pytest.raises(ValueError, match="Content cannot be empty"):
-        Entry(user_id=1, title="Test Title", content="")
+            # 数値の場合
+            with pytest.raises(ValueError, match='Notes must be a string'):
+                Entry(
+                    user_id=self.user_id,
+                    title='Test Title',
+                    content='Test Content',
+                    notes=123
+                )
 
-    with pytest.raises(ValueError, match="Content cannot be empty"):
-        Entry(user_id=1, title="Test Title", content="   ")
+    def test_validate_user_id(self, app):
+        """user_idのバリデーションテスト"""
+        with app.app_context():
+            # Noneの場合
+            with pytest.raises(ValueError, match='User ID cannot be None'):
+                Entry(
+                    user_id=None,
+                    title='Test Title',
+                    content='Test Content'
+                )
 
-def test_validate_notes():
-    """ノートのバリデーションテスト"""
-    # 正常なノート
-    entry = Entry(user_id=1, title="Test Title", content="Test Content", notes="Valid Notes")
-    assert entry.notes == "Valid Notes"
+            # 文字列の場合
+            with pytest.raises(ValueError, match='User ID must be an integer'):
+                Entry(
+                    user_id='1',
+                    title='Test Title',
+                    content='Test Content'
+                )
 
-    # 空のノート
-    entry = Entry(user_id=1, title="Test Title", content="Test Content", notes="")
-    assert entry.notes == ""
+            # 負数の場合
+            with pytest.raises(ValueError, match='User ID must be positive'):
+                Entry(
+                    user_id=-1,
+                    title='Test Title',
+                    content='Test Content'
+                )
 
-    # Noneの場合は空文字に変換
-    entry = Entry(user_id=1, title="Test Title", content="Test Content", notes=None)
-    assert entry.notes == ""
+            # 0の場合
+            with pytest.raises(ValueError, match='User ID must be positive'):
+                Entry(
+                    user_id=0,
+                    title='Test Title',
+                    content='Test Content'
+                )
 
-    # 無効なノート
-    with pytest.raises(ValueError, match="Notes must be a string"):
-        Entry(user_id=1, title="Test Title", content="Test Content", notes=123)
+    def test_relationship_with_user(self, app):
+        """Userとのリレーションシップテスト"""
+        with app.app_context():
+            with db.session() as session:
+                entry = Entry(
+                    user_id=self.user_id,
+                    title='Test Entry',
+                    content='Test Content'
+                )
+                session.add(entry)
+                session.commit()
 
-def test_validate_user_id():
-    """ユーザーIDのバリデーションテスト"""
-    # 正常なユーザーID
-    entry = Entry(user_id=1, title="Test Title", content="Test Content")
-    assert entry.user_id == 1
+                # リレーションシップを確認
+                user = session.get(User, self.user_id)
+                assert entry.user == user
+                assert entry in user.entries
 
-    # 無効なユーザーID
-    with pytest.raises(ValueError, match="User ID cannot be None"):
-        Entry(user_id=None, title="Test Title", content="Test Content")
+    def test_relationship_with_diary_items(self, app):
+        """DiaryItemsとのリレーションシップテスト"""
+        with app.app_context():
+            with db.session() as session:
+                # エントリーを作成
+                entry = Entry(
+                    user_id=self.user_id,
+                    title='Test Entry',
+                    content='Test Content'
+                )
+                session.add(entry)
+                session.commit()
 
-    with pytest.raises(ValueError, match="User ID must be an integer"):
-        Entry(user_id="1", title="Test Title", content="Test Content")
+                # DiaryItemを追加
+                item1 = DiaryItem(
+                    entry_id=entry.id,
+                    item_name='Item 1',
+                    item_content='Content 1'
+                )
+                item2 = DiaryItem(
+                    entry_id=entry.id,
+                    item_name='Item 2',
+                    item_content='Content 2'
+                )
+                session.add(item1)
+                session.add(item2)
+                session.commit()
 
-    with pytest.raises(ValueError, match="User ID must be positive"):
-        Entry(user_id=0, title="Test Title", content="Test Content")
+                # リレーションシップを確認
+                assert len(entry.items) == 2
+                assert item1 in entry.items
+                assert item2 in entry.items
 
-    with pytest.raises(ValueError, match="User ID must be positive"):
-        Entry(user_id=-1, title="Test Title", content="Test Content")
+                # cascade deleteのテスト
+                session.delete(entry)
+                session.commit()
 
-def test_update(test_user):
-    """更新メソッドのテスト"""
-    # エントリーを作成
-    entry = Entry(
-        user_id=test_user.id,
-        title="Original Title",
-        content="Original Content",
-        notes="Original Notes"
-    )
-    db.session.add(entry)
-    db.session.commit()
+                # DiaryItemsも削除されていることを確認
+                items = session.query(DiaryItem).all()
+                assert len(items) == 0
 
-    # 更新前の状態を確認
-    assert entry.title == "Original Title"
-    assert entry.content == "Original Content"
-    assert entry.notes == "Original Notes"
-    assert entry.updated_at is None
+    def test_update(self, app):
+        """updateメソッドのテスト"""
+        with app.app_context():
+            with db.session() as session:
+                # エントリーを作成
+                entry = Entry(
+                    user_id=self.user_id,
+                    title='Original Title',
+                    content='Original Content',
+                    notes='Original Notes'
+                )
+                session.add(entry)
+                session.commit()
 
-    # 更新を実行
-    entry.update(
-        title="Updated Title",
-        content="Updated Content",
-        notes="Updated Notes"
-    )
-    db.session.commit()
+                # 更新前のupdated_atを記録
+                assert entry.updated_at is None
 
-    # 更新後の状態を確認
-    assert entry.title == "Updated Title"
-    assert entry.content == "Updated Content"
-    assert entry.notes == "Updated Notes"
-    assert isinstance(entry.updated_at, datetime)
+                # 更新を実行
+                entry.update(
+                    title='Updated Title',
+                    content='Updated Content',
+                    notes='Updated Notes'
+                )
 
-def test_relationships(test_user):
-    """リレーションシップのテスト"""
-    # エントリーを作成
-    entry = Entry(
-        user_id=test_user.id,
-        title="Test Title",
-        content="Test Content"
-    )
-    db.session.add(entry)
-    db.session.commit()
+                # 変更を確認
+                assert entry.title == 'Updated Title'
+                assert entry.content == 'Updated Content'
+                assert entry.notes == 'Updated Notes'
+                assert isinstance(entry.updated_at, datetime)
 
-    # DiaryItemを追加
-    item1 = DiaryItem(
-        entry_id=entry.id,
-        item_name="Item 1",
-        item_content="Content 1"
-    )
-    item2 = DiaryItem(
-        entry_id=entry.id,
-        item_name="Item 2",
-        item_content="Content 2"
-    )
-    db.session.add(item1)
-    db.session.add(item2)
-    db.session.commit()
+                # 存在しない属性は無視される
+                entry.update(nonexistent_field='value')
+                assert not hasattr(entry, 'nonexistent_field')
 
-    # リレーションシップを確認
-    assert entry.user == test_user
-    assert len(entry.items) == 2
-    assert entry.items[0].item_name == "Item 1"
-    assert entry.items[1].item_name == "Item 2"
-
-    # カスケード削除を確認
-    db.session.delete(entry)
-    db.session.commit()
-
-    # DiaryItemも削除されていることを確認
-    items = DiaryItem.query.all()
-    assert len(items) == 0
+    def test_repr(self, app):
+        """__repr__メソッドのテスト"""
+        with app.app_context():
+            entry = Entry(
+                user_id=self.user_id,
+                title='Test Entry',
+                content='Test Content'
+            )
+            assert repr(entry) == '<Entry Test Entry>'
