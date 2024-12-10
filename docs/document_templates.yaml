@@ -1,0 +1,113 @@
+# ドキュメント一括更新用テンプレート
+
+document_sync:
+  task: "ドキュメントの一括更新と同期"
+  target_files:
+    - README.md
+    - README_JA.md
+    - docs/diagrams.md
+    - docs/diagrams_ja.md
+    - docs/specification.md
+    - docs/specification_ja.md
+  sections:
+    version_history:
+      template: |
+        ## Version History / 更新履歴
+        - 2024/12/01: Initial release 0.01 / 0.01公開
+        - 2024/12/08: Model structure improvements and test additions / モデル構造の改善とテストの追加
+        - 2024/12/09: Migration functionality added / マイグレーション機能の追加
+        - 2024/12/10: Development environment changed to conda-based / 開発環境をcondaベースに変更
+      notes: |
+        - 両言語で同じ更新履歴を維持
+        - 日付形式の統一
+        - 変更内容の明確な記述
+
+    security_spec:
+      template: |
+        ## Security Specifications / セキュリティ仕様
+        ### Authentication and Authorization / 認証と認可
+        1. Session Management
+        2. Password Security
+        3. Access Control
+
+        ### Account Security / アカウントセキュリティ
+        1. Login Protection
+        2. Account Management
+
+        ### Data Security / データセキュリティ
+        1. Data Access Control
+        2. Database Security
+
+        ### Web Security / Webセキュリティ
+        1. CSRF Protection
+        2. Security Headers
+        3. Error Handling
+
+        ### Production Requirements / 本番環境要件
+        1. Environment Security
+        2. Monitoring and Logging
+      notes: |
+        - セキュリティ要件の完全な記述
+        - 両言語での正確な対応
+        - 実装状況の反映
+
+    database_design:
+      template: |
+        ## Database Design / データベース設計
+        ### Tables / テーブル
+        - users
+        - entries
+        - diary_items
+
+        ### Migration Management / マイグレーション管理
+        - Using Alembic
+        - Version control
+        - Configuration
+      notes: |
+        - スキーマの完全な定義
+        - リレーションシップの明確化
+        - 制約条件の詳細
+
+    model_structure:
+      template: |
+        ## Model Structure / モデル構造
+        ### Basic Structure / 基本構造
+        - Base classes
+        - Inheritance
+        - Relationships
+
+        ### Model Classes / モデルクラス
+        1. User
+        2. Entry
+        3. DiaryItem
+        4. UserManager
+      notes: |
+        - クラス構造の一貫性
+        - メソッドの完全な記述
+        - リレーションシップの詳細
+
+execution_order:
+  1: "バージョン履歴の更新"
+  2: "セキュリティ仕様の同期"
+  3: "データベース設計の更新"
+  4: "モデル構造の同期"
+  5: "相互参照の確認"
+  6: "フォーマットの統一"
+
+validation_rules:
+  - 両言語バージョンの内容一致
+  - 相互参照の整合性
+  - フォーマットの一貫性
+  - 技術用語の統一
+  - 更新日時の同期
+
+# 使用方法
+# 1. 一括更新の実行
+# python tools/prompt_manager.py sync document_sync
+#
+# 2. 特定セクションの更新
+# python tools/prompt_manager.py sync security_spec
+#
+# 3. 言語別の更新
+# python tools/prompt_manager.py sync document_sync --lang=en
+# python tools/prompt_manager.py sync document_sync --lang=ja
