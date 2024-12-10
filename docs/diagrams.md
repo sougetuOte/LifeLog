@@ -4,6 +4,8 @@
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test configuration additions
 - 2024/12/09: Database structure and migration specification additions
+- 2024/12/10: Development environment changed to conda-based, Python version updated
+
 
 ## 1. Screen Transition Diagram
 
@@ -488,3 +490,4 @@ graph TB
 - `item_name`: NOT NULL
 - `item_content`: NOT NULL
 - `created_at`: NOT NULL
+

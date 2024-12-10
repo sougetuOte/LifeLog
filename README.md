@@ -9,6 +9,7 @@ A simple diary posting and management system with user authentication, featuring
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test additions
 - 2024/12/09: Migration functionality added
+- 2024/12/10: Development environment changed to conda-based
 
 ## Key Features
 
@@ -19,7 +20,7 @@ A simple diary posting and management system with user authentication, featuring
 
 ## Technology Stack
 
-- Python 3.11.9
+- Python 3.11.10
 - Flask 3.1.0
 - SQLAlchemy 2.0
 - Alembic 1.13.0
@@ -28,12 +29,11 @@ A simple diary posting and management system with user authentication, featuring
 
 ## Setup Instructions
 
-1. Prepare Python Environment
+1. Prepare Conda Environment
 ```bash
-pyenv install 3.11.9
-pyenv local 3.11.9
-python -m venv venv
-source venv/bin/activate
+# Create Conda environment
+conda create -n lifelog python=3.11
+conda activate lifelog
 ```
 
 2. Install Dependencies
@@ -139,10 +139,10 @@ For detailed application specifications, please refer to the following documents
 ├── instance/          # Instance-specific Files
 │   └── diary.db      # SQLite Database
 └── tests/            # Test Files
-│   ├── conftest.py   # Test Configuration
-│   ├── test_user.py  # User Tests
-│   ├── test_entry.py # Entry Tests
-│   └── test_user_manager.py # User Manager Tests
+    ├── conftest.py   # Test Configuration
+    ├── test_user.py  # User Tests
+    ├── test_entry.py # Entry Tests
+    └── test_user_manager.py # User Manager Tests
 └── docs/             # Documentation
     ├── specification.md     # Specifications (English)
     ├── specification_ja.md  # Specifications (Japanese)

@@ -1,0 +1,227 @@
+# ドキュメント更新用プロンプトテンプレート
+# 使用方法：必要なプロンプトをコピーして使用してください
+
+security_spec_update:
+  task: "セキュリティ仕様セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 6. Security Specifications / セキュリティ仕様"
+  template: |
+    ### 6.1 Authentication and Authorization / 認証と認可
+    1. Session Management
+    2. Password Security
+    3. Access Control
+
+    ### 6.2 Account Security / アカウントセキュリティ
+    1. Login Protection
+    2. Account Management
+
+    ### 6.3 Data Security / データセキュリティ
+    1. Data Access Control
+    2. Database Security
+
+    ### 6.4 Web Security / Webセキュリティ
+    1. CSRF Protection
+    2. Security Headers
+    3. Error Handling
+
+    ### 6.5 Production Requirements / 本番環境要件
+    1. Environment Security
+    2. Monitoring and Logging
+  notes: |
+    - 両言語版で内容を同期させること
+    - 現在の実装を反映すること
+    - 本番環境の要件も含めること
+
+database_spec_update:
+  task: "データベース設計セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 4. Database Design / データベース設計"
+  template: |
+    ### 4.1 Tables / テーブル
+    - users
+    - entries
+    - diary_items
+
+    ### 4.2 Relationships / リレーション
+    - User-Entry (1:N)
+    - Entry-DiaryItem (1:N)
+
+    ### 4.3 Constraints / 制約
+    - Primary Keys
+    - Foreign Keys
+    - Unique Constraints
+
+    ### 4.4 Migrations / マイグレーション
+    - Version Control
+    - Rollback Strategy
+  notes: |
+    - テーブル定義はSQLで記述
+    - マイグレーション管理方法を含める
+    - インデックス戦略を記載
+
+model_spec_update:
+  task: "モデル構造セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 5. Model Structure / モデル構造"
+  template: |
+    ### 5.1 Base Classes / 基本クラス
+    - Base Model
+    - Mixins
+
+    ### 5.2 Model Classes / モデルクラス
+    1. User
+    2. Entry
+    3. DiaryItem
+    4. UserManager
+
+    ### 5.3 Relationships / リレーション
+    - Definitions
+    - Cascade Rules
+  notes: |
+    - クラス構造を図示
+    - メソッドの説明を含める
+    - バリデーションルールを記載
+
+test_spec_update:
+  task: "テスト仕様セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 7. Test Specifications / テスト仕様"
+  template: |
+    ### 7.1 Test Configuration / テスト構成
+    - Setup
+    - Fixtures
+    - Coverage Settings
+
+    ### 7.2 Test Cases / テストケース
+    - Unit Tests
+    - Integration Tests
+    - E2E Tests
+
+    ### 7.3 Coverage Goals / カバレッジ目標
+    - Model Layer
+    - Service Layer
+    - View Layer
+  notes: |
+    - テストケースの分類を明確に
+    - カバレッジ目標を数値で
+    - CI/CD連携について言及
+
+screen_spec_update:
+  task: "画面仕様セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 3. Screen Specifications / 画面仕様"
+  template: |
+    ### 3.1 Common Elements / 共通要素
+    - Header
+    - Footer
+    - Navigation
+
+    ### 3.2 Pages / ページ
+    1. Home
+    2. Login
+    3. Settings
+    4. Admin
+
+    ### 3.3 Components / コンポーネント
+    - Forms
+    - Modals
+    - Alerts
+  notes: |
+    - レイアウトを図示
+    - 画面遷移を記載
+    - レスポンシブ対応を明記
+
+user_management_spec_update:
+  task: "ユーザー管理機能セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 1. User Management / ユーザー管理機能"
+  template: |
+    ### 1.1 Registration / 登録
+    - Requirements
+    - Validation Rules
+    - Process Flow
+
+    ### 1.2 Authentication / 認証
+    - Login Process
+    - Session Management
+    - Security Measures
+
+    ### 1.3 Authorization / 認可
+    - User Roles
+    - Permissions
+    - Access Control
+  notes: |
+    - セキュリティ要件を含める
+    - エラー処理を詳細に
+    - 状態遷移を図示
+
+diary_management_spec_update:
+  task: "日記管理機能セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 2. Diary Management / 日記管理機能"
+  template: |
+    ### 2.1 Entry Creation / 投稿作成
+    - Required Fields
+    - Optional Fields
+    - Validation Rules
+
+    ### 2.2 Entry Display / 投稿表示
+    - List View
+    - Detail View
+    - Sort/Filter Options
+
+    ### 2.3 Entry Management / 投稿管理
+    - Edit Process
+    - Delete Process
+    - Access Control
+  notes: |
+    - 入力制限を明記
+    - 表示制御を詳細に
+    - 権限管理を含める
+
+notes_spec_update:
+  task: "注意事項セクションの更新"
+  target_files:
+    - docs/specification.md
+    - docs/specification_ja.md
+  section: "## 8. Important Notes / 注意事項"
+  template: |
+    ### 8.1 Development Environment / 開発環境
+    - Requirements
+    - Setup Process
+    - Configuration
+
+    ### 8.2 Limitations / 制限事項
+    - Current Limitations
+    - Future Plans
+    - Known Issues
+
+    ### 8.3 Maintenance / メンテナンス
+    - Update Process
+    - Backup Strategy
+    - Monitoring
+  notes: |
+    - 環境依存を明記
+    - 制限事項を具体的に
+    - 運用方針を含める
+
+# 使用方法
+# 1. 更新したいセクションのプロンプトをコピー
+# 2. task, target_files, section を確認
+# 3. template を参考に更新内容を作成
+# 4. notes の注意事項を確認
+# 5. 両言語版のドキュメントを更新

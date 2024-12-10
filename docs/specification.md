@@ -4,7 +4,7 @@
 - 2024/12/01: Initial release 0.01
 - 2024/12/08: Model structure improvements and test specification additions
 - 2024/12/09: Database structure and migration specification additions
-
+- 2024/12/10: Development environment changed to conda-based
 
 ## Table of Contents
 1. [User Management](#1-user-management)
@@ -241,7 +241,94 @@ models.py          # SQLAlchemy Model Definitions (Unified)
 
 ## 6. Security Specifications
 
-[Security specifications remain unchanged]
+### 6.1 Authentication and Authorization
+1. Session Management
+   - Flask session-based authentication
+   - Session secret key required for production
+   - Session data includes:
+     - user_id: User identification
+     - is_admin: Administrator status
+     - name: Display name
+     - userid: User ID
+
+2. Password Security
+   - Password requirements:
+     - Length: 8-20 characters
+     - Must include: uppercase, lowercase, numbers
+   - Password hashing required for production
+   - Current password verification for changes
+
+3. Access Control
+   - Role-based access control (RBAC):
+     - Administrator
+     - Regular User
+     - Non-logged-in User
+   - Function-level access control using decorators:
+     - @login_required
+     - @admin_required
+
+### 6.2 Account Security
+1. Login Protection
+   - Maximum 3 login attempts
+   - Account auto-lock after 3 failed attempts
+   - Login attempt tracking:
+     - Attempt counter
+     - Last attempt timestamp
+   - Only administrators can unlock accounts
+
+2. Account Management
+   - Deactivation requires password verification
+   - Administrator accounts cannot be deactivated
+   - Deactivated accounts:
+     - Cannot log in
+     - Content only visible to administrators
+   - Account visibility control by administrators
+
+### 6.3 Data Security
+1. Data Access Control
+   - Regular users:
+     - View only active users' entries
+     - Edit/delete own entries only
+   - Administrators:
+     - Access all entries
+     - Edit/delete any entry
+     - Manage user accounts
+
+2. Database Security
+   - SQL injection prevention using SQLAlchemy
+   - Cascade deletion rules for related data
+   - Foreign key constraints
+   - Unique constraints on user IDs
+
+### 6.4 Web Security
+1. CSRF Protection
+   - Session-based CSRF protection
+   - Required for all POST/PUT/DELETE requests
+
+2. Security Headers (Required for Production)
+   - X-Content-Type-Options
+   - X-Frame-Options
+   - X-XSS-Protection
+   - Content-Security-Policy
+   - Strict-Transport-Security
+
+3. Error Handling
+   - Generic error messages to users
+   - Detailed logging for debugging
+   - No sensitive information in error responses
+
+### 6.5 Production Requirements
+1. Environment Security
+   - Secure session key configuration
+   - HTTPS implementation
+   - Production-grade WSGI server
+   - Regular security updates
+
+2. Monitoring and Logging
+   - Login attempt monitoring
+   - Administrative action logging
+   - Security event tracking
+   - Regular security audits
 
 ## 7. Test Specifications
 
@@ -314,3 +401,8 @@ models.py          # SQLAlchemy Model Definitions (Unified)
 - No password reset feature
 - No account deletion reversal
 
+### 8.3 Development Environment Requirements
+- Python 3.11.10
+- Conda environment management
+- Required packages listed in `requirements.txt`
+- Test packages listed in `requirements-test.txt`

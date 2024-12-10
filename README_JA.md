@@ -9,6 +9,7 @@
 - 2024/12/01: 0.01公開
 - 2024/12/08: モデル構造の改善とテストの追加
 - 2024/12/09: マイグレーション機能の追加
+- 2024/12/10: 開発環境をcondaベースに変更
 
 ## 主な機能
 
@@ -19,7 +20,7 @@
 
 ## 技術スタック
 
-- Python 3.11.9
+- Python 3.11.10
 - Flask 3.1.0
 - SQLAlchemy 2.0
 - Alembic 1.13.0
@@ -28,12 +29,11 @@
 
 ## セットアップ方法
 
-1. Python環境の準備
+1. Conda環境の準備
 ```bash
-pyenv install 3.11.9
-pyenv local 3.11.9
-python -m venv venv
-source venv/bin/activate
+# Conda環境の作成
+conda create -n lifelog python=3.11
+conda activate lifelog
 ```
 
 2. 依存パッケージのインストール

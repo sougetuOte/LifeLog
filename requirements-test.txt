@@ -1,4 +1,4 @@
 # requirements-test.txt
-pytest==7.4.0
-pytest-cov==4.1.0
-coverage==7.3.0
+pytest==8.3.4
+pytest-cov==6.0.0
+coverage==7.6.9
