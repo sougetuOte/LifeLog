@@ -9,4 +9,4 @@ SQLAlchemy==2.0.36
 Flask-SQLAlchemy==3.1.1
 alembic==1.14.0
 pyppeteer==2.0.0
-yaml==0.2.5
+pyyaml==6.0.2
