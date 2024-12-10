@@ -57,10 +57,14 @@ def session(app):
     yield session
     
     # クリーンアップ
-    session.remove()
-    transaction.rollback()
-    connection.close()
-    db.session = old_session
+    try:
+        session.remove()
+        # トランザクションがアクティブな場合のみロールバック
+        if transaction.is_active:
+            transaction.rollback()
+    finally:
+        connection.close()
+        db.session = old_session
 
 @pytest.fixture(scope="session")
 def base_timestamp() -> datetime:

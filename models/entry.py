@@ -41,9 +41,43 @@ class Entry(db.Model, Base):
 
     @validates('title')
     def validate_title(self, key, title):
+        if title is None:
+            raise ValueError('Title cannot be None')
+        if not isinstance(title, str):
+            raise ValueError('Title must be a string')
+        if len(title.strip()) == 0:
+            raise ValueError('Title cannot be empty')
         if len(title) > 100:
             raise ValueError('Title must be 100 characters or less')
         return title
+
+    @validates('content')
+    def validate_content(self, key, content):
+        if content is None:
+            raise ValueError('Content cannot be None')
+        if not isinstance(content, str):
+            raise ValueError('Content must be a string')
+        if len(content.strip()) == 0:
+            raise ValueError('Content cannot be empty')
+        return content
+
+    @validates('notes')
+    def validate_notes(self, key, notes):
+        if notes is None:
+            return ''
+        if not isinstance(notes, str):
+            raise ValueError('Notes must be a string')
+        return notes
+
+    @validates('user_id')
+    def validate_user_id(self, key, user_id):
+        if user_id is None:
+            raise ValueError('User ID cannot be None')
+        if not isinstance(user_id, int):
+            raise ValueError('User ID must be an integer')
+        if user_id <= 0:
+            raise ValueError('User ID must be positive')
+        return user_id
 
     def update(self, **kwargs):
         """エントリーの属性を更新する"""
