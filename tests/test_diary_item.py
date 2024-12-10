@@ -73,6 +73,46 @@ class TestDiaryItem:
         assert isinstance(diary_item2.created_at, datetime)
         assert before_creation <= diary_item2.created_at <= after_creation
 
+    def test_diary_item_validation(self, app, session):
+        """DiaryItemのバリデーションテスト"""
+        user, entry = self.setup_user_and_entry(session)
+
+        # entry_idのバリデーション
+        with pytest.raises(ValueError, match='Entry ID cannot be None'):
+            DiaryItem(item_name='Test', item_content='Content')
+
+        with pytest.raises(ValueError, match='Entry ID must be an integer'):
+            DiaryItem(entry_id='invalid', item_name='Test', item_content='Content')
+
+        with pytest.raises(ValueError, match='Entry ID must be a positive integer'):
+            DiaryItem(entry_id=0, item_name='Test', item_content='Content')
+
+        with pytest.raises(ValueError, match='Entry ID must be a positive integer'):
+            DiaryItem(entry_id=-1, item_name='Test', item_content='Content')
+
+        # item_nameのバリデーション
+        with pytest.raises(ValueError, match='Item name cannot be None'):
+            DiaryItem(entry_id=entry.id, item_content='Content')
+
+        with pytest.raises(ValueError, match='Item name must be a string'):
+            DiaryItem(entry_id=entry.id, item_name=123, item_content='Content')
+
+        with pytest.raises(ValueError, match='Item name cannot be empty'):
+            DiaryItem(entry_id=entry.id, item_name='', item_content='Content')
+
+        with pytest.raises(ValueError, match='Item name must be 100 characters or less'):
+            DiaryItem(entry_id=entry.id, item_name='a' * 101, item_content='Content')
+
+        # item_contentのバリデーション
+        with pytest.raises(ValueError, match='Item content cannot be None'):
+            DiaryItem(entry_id=entry.id, item_name='Test')
+
+        with pytest.raises(ValueError, match='Item content must be a string'):
+            DiaryItem(entry_id=entry.id, item_name='Test', item_content=123)
+
+        with pytest.raises(ValueError, match='Item content cannot be empty'):
+            DiaryItem(entry_id=entry.id, item_name='Test', item_content='')
+
     def test_diary_item_relationships(self, app, session):
         """DiaryItemのリレーションシップテスト"""
         # テスト用のユーザーとエントリーを作成
@@ -109,7 +149,7 @@ class TestDiaryItem:
 
     def test_diary_item_missing_required_fields(self, app, session):
         """必須フィールド欠落のテスト"""
-        with pytest.raises(IntegrityError):
+        with pytest.raises(ValueError):
             diary_item = DiaryItem()
             session.add(diary_item)
             session.flush()
@@ -124,7 +164,7 @@ class TestDiaryItem:
         ]
 
         for test_case in test_cases:
-            with pytest.raises(IntegrityError):
+            with pytest.raises(ValueError):
                 diary_item = DiaryItem(**test_case)
                 session.add(diary_item)
                 session.flush()
@@ -182,14 +222,6 @@ class TestDiaryItem:
             item_content='Test Content'
         )
         assert repr(diary_item3) == f'<DiaryItem {long_name}>'
-
-        # 空の名前のケース（バリデーションで防ぐべきだが、__repr__は対応する必要がある）
-        diary_item4 = DiaryItem(
-            entry_id=1,
-            item_name='',
-            item_content='Test Content'
-        )
-        assert repr(diary_item4) == '<DiaryItem >'
 
     def test_diary_item_timestamps(self, app, session):
         """DiaryItemのタイムスタンプ処理テスト"""

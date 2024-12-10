@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Boolean, Integer, String, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from database import db, logger
 from models.base import Base
 
@@ -20,6 +20,45 @@ class User(db.Model, Base):
 
     # リレーションシップ
     entries: Mapped[list["Entry"]] = relationship("Entry", back_populates="user", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        # 必須フィールドの存在チェック
+        if 'userid' not in kwargs:
+            raise ValueError('User ID cannot be None')
+        if 'name' not in kwargs:
+            raise ValueError('Name cannot be None')
+        if 'password' not in kwargs:
+            raise ValueError('Password cannot be None')
+        
+        super().__init__(**kwargs)
+
+    @validates('userid')
+    def validate_userid(self, key, value):
+        if not isinstance(value, str):
+            raise ValueError('User ID must be a string')
+        if len(value.strip()) == 0:
+            raise ValueError('User ID cannot be empty')
+        if len(value) > 20:
+            raise ValueError('User ID must be 20 characters or less')
+        return value
+
+    @validates('name')
+    def validate_name(self, key, value):
+        if not isinstance(value, str):
+            raise ValueError('Name must be a string')
+        if len(value.strip()) == 0:
+            raise ValueError('Name cannot be empty')
+        if len(value) > 20:
+            raise ValueError('Name must be 20 characters or less')
+        return value
+
+    @validates('password')
+    def validate_password_field(self, key, value):
+        if not isinstance(value, str):
+            raise ValueError('Password must be a string')
+        if len(value.strip()) == 0:
+            raise ValueError('Password cannot be empty')
+        return value
 
     def __repr__(self):
         return f"<User {self.userid}>"
