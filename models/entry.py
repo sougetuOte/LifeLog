@@ -11,13 +11,30 @@ class Entry(db.Model, Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'), nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    notes: Mapped[str] = mapped_column(Text, nullable=False, default='')
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    notes: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default='',
+        server_default=''
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        server_default=db.func.current_timestamp()
+    )
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     # リレーションシップ
     user: Mapped["User"] = relationship("User", back_populates="entries")
     items: Mapped[list["DiaryItem"]] = relationship("DiaryItem", back_populates="entry", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'notes' not in kwargs:
+            self.notes = ''
+        if 'created_at' not in kwargs:
+            self.created_at = datetime.now()
 
     def __repr__(self):
         return f"<Entry {self.title}>"

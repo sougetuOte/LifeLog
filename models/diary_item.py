@@ -11,10 +11,20 @@ class DiaryItem(db.Model, Base):
     entry_id: Mapped[int] = mapped_column(Integer, ForeignKey('entries.id'), nullable=False)
     item_name: Mapped[str] = mapped_column(String(100), nullable=False)
     item_content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        server_default=db.func.current_timestamp()
+    )
 
     # リレーションシップ
     entry: Mapped["Entry"] = relationship("Entry", back_populates="items")
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'created_at' not in kwargs:
+            self.created_at = datetime.now()
 
     def __repr__(self):
         return f"<DiaryItem {self.item_name}>"
