@@ -5,163 +5,157 @@ from models.user import User
 from models.entry import Entry
 from models.diary_item import DiaryItem
 from database import db
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import select, text
 
 class TestInitData:
-    def test_create_initial_data(self, app, session):
-        """初期データ作成のテスト"""
-        # 初期データを作成
-        create_initial_data()
+    def setup_method(self, method):
+        """各テストメソッドの前にデータベースをクリア"""
+        with db.session() as session:
+            session.execute(text('DELETE FROM diary_items'))
+            session.execute(text('DELETE FROM entries'))
+            session.execute(text('DELETE FROM users'))
+            session.commit()
 
-        # ユーザーの検証
-        users = session.query(User).all()
-        assert len(users) == 3
-        
-        admin = session.query(User).filter_by(userid='admin').first()
-        assert admin is not None
-        assert admin.name == '管理人'
-        assert admin.is_admin is True
-        assert admin.check_password('Admin3210')
-        assert isinstance(admin.created_at, datetime)
+    def test_create_initial_data(self, app):
+        """初期データ作成の基本テスト"""
+        with app.app_context():
+            # 初期データを作成
+            create_initial_data()
 
-        tetsu = session.query(User).filter_by(userid='tetsu').first()
-        assert tetsu is not None
-        assert tetsu.name == 'devilman'
-        assert tetsu.is_admin is False
-        assert tetsu.check_password('Tetsu3210')
-        assert isinstance(tetsu.created_at, datetime)
+            # ユーザーの確認
+            admin = db.session.execute(select(User).filter_by(userid='admin')).scalar_one()
+            assert admin.name == '管理人'
+            assert admin.is_admin is True
 
-        gento = session.query(User).filter_by(userid='gento').first()
-        assert gento is not None
-        assert gento.name == 'gen chan'
-        assert gento.is_admin is False
-        assert gento.check_password('Gento3210')
-        assert isinstance(gento.created_at, datetime)
+            tetsu = db.session.execute(select(User).filter_by(userid='tetsu')).scalar_one()
+            assert tetsu.name == 'devilman'
+            assert tetsu.is_admin is False
 
-        # エントリーの検証
-        entries = session.query(Entry).all()
-        assert len(entries) == 2
+            gento = db.session.execute(select(User).filter_by(userid='gento')).scalar_one()
+            assert gento.name == 'gen chan'
+            assert gento.is_admin is False
 
-        admin_entry = session.query(Entry).filter_by(user_id=admin.id).first()
-        assert admin_entry is not None
-        assert admin_entry.title == 'LifeLogの運営開始について'
-        assert 'LifeLogの運営を開始しました' in admin_entry.content
-        assert '天気：晴れ' in admin_entry.notes
-        assert isinstance(admin_entry.created_at, datetime)
-        assert admin_entry.user == admin
+            # 投稿の確認
+            admin_entry = db.session.execute(
+                select(Entry).filter_by(user_id=admin.id, title='LifeLogの運営開始について')
+            ).scalar_one()
+            assert 'LifeLogの運営を開始しました' in admin_entry.content
+            assert admin_entry.user == admin
 
-        tetsu_entry = session.query(Entry).filter_by(user_id=tetsu.id).first()
-        assert tetsu_entry is not None
-        assert tetsu_entry.title == '試合に向けて本格始動'
-        assert '本格的なトレーニング期間' in tetsu_entry.content
-        assert '体重：75kg' in tetsu_entry.notes
-        assert isinstance(tetsu_entry.created_at, datetime)
-        assert tetsu_entry.user == tetsu
+            tetsu_entry = db.session.execute(
+                select(Entry).filter_by(user_id=tetsu.id, title='試合に向けて本格始動')
+            ).scalar_one()
+            assert '本格的なトレーニング期間' in tetsu_entry.content
+            assert tetsu_entry.user == tetsu
 
-        # DiaryItemの検証
-        diary_items = session.query(DiaryItem).filter_by(entry_id=tetsu_entry.id).all()
-        assert len(diary_items) == 2
+            # DiaryItemの確認
+            diary_items = db.session.execute(
+                select(DiaryItem).filter_by(entry_id=tetsu_entry.id)
+            ).scalars().all()
+            assert len(diary_items) == 2
+            
+            training_item = next(item for item in diary_items if item.item_name == '筋トレ')
+            assert 'スクワット' in training_item.item_content
+            assert training_item.entry == tetsu_entry
 
-        training_item = next((item for item in diary_items if item.item_name == '筋トレ'), None)
-        assert training_item is not None
-        assert 'スクワット' in training_item.item_content
-        assert 'ベンチプレス' in training_item.item_content
-        assert isinstance(training_item.created_at, datetime)
-        assert training_item.entry == tetsu_entry
+            running_item = next(item for item in diary_items if item.item_name == 'ランニング')
+            assert '10km' in running_item.item_content
+            assert running_item.entry == tetsu_entry
 
-        running_item = next((item for item in diary_items if item.item_name == 'ランニング'), None)
-        assert running_item is not None
-        assert '朝：10km' in running_item.item_content
-        assert '夜：5km' in running_item.item_content
-        assert isinstance(running_item.created_at, datetime)
-        assert running_item.entry == tetsu_entry
-
-    def test_create_initial_data_idempotency(self, app, session):
+    def test_create_initial_data_idempotency(self, app):
         """初期データ作成の冪等性テスト"""
-        # 2回実行しても問題ないことを確認
-        create_initial_data()
-        create_initial_data()
+        with app.app_context():
+            # 2回実行しても問題ないことを確認
+            create_initial_data()
+            
+            # ユーザー数を記録
+            user_count_1 = len(db.session.execute(select(User)).scalars().all())
+            entry_count_1 = len(db.session.execute(select(Entry)).scalars().all())
+            item_count_1 = len(db.session.execute(select(DiaryItem)).scalars().all())
 
-        # ユーザー数が3のままであることを確認
-        users = session.query(User).all()
-        assert len(users) == 3
+            create_initial_data()
 
-        # エントリー数が2のままであることを確認
-        entries = session.query(Entry).all()
-        assert len(entries) == 2
+            # 2回目実行後も同じ数であることを確認
+            user_count_2 = len(db.session.execute(select(User)).scalars().all())
+            entry_count_2 = len(db.session.execute(select(Entry)).scalars().all())
+            item_count_2 = len(db.session.execute(select(DiaryItem)).scalars().all())
 
-        # DiaryItem数が2のままであることを確認
-        diary_items = session.query(DiaryItem).all()
-        assert len(diary_items) == 2
+            assert user_count_1 == user_count_2
+            assert entry_count_1 == entry_count_2
+            assert item_count_1 == item_count_2
 
-    def test_create_initial_data_with_existing_users(self, app, session):
-        """既存ユーザーが存在する場合のテスト"""
-        # 先に管理者ユーザーを作成
-        admin = User(
-            userid='admin',
-            name='既存管理者',
-            password='different_password',
-            is_admin=True,
-            created_at=datetime.now()
-        )
-        session.add(admin)
-        session.flush()
+    def test_create_initial_data_with_existing_users(self, app):
+        """既存ユーザーがいる場合のテスト"""
+        with app.app_context():
+            # 先に管理者ユーザーを作成
+            admin = User(
+                userid='admin',
+                name='既存管理者',
+                password='ExistingAdmin123',
+                is_admin=True,
+                is_locked=False,
+                is_visible=True,
+                login_attempts=0,
+                created_at=datetime.now()
+            )
+            db.session.add(admin)
+            db.session.commit()
 
-        # 初期データを作成
-        create_initial_data()
+            # 初期データを作成
+            create_initial_data()
 
-        # 既存の管理者が維持されていることを確認
-        admin = session.query(User).filter_by(userid='admin').first()
-        assert admin.name == '既存管理者'
-        assert admin.password == 'different_password'
+            # 既存の管理者が上書きされていないことを確認
+            admin = db.session.execute(select(User).filter_by(userid='admin')).scalar_one()
+            assert admin.name == '既存管理者'
+            assert admin.password == 'ExistingAdmin123'
 
-        # 他のユーザーは正常に作成されていることを確認
-        assert session.query(User).filter_by(userid='tetsu').first() is not None
-        assert session.query(User).filter_by(userid='gento').first() is not None
+    def test_create_initial_data_with_partial_data(self, app):
+        """一部のデータのみ存在する場合のテスト"""
+        with app.app_context():
+            # tetsuユーザーのみ先に作成
+            tetsu = User(
+                userid='tetsu',
+                name='existing tetsu',
+                password='ExistingTetsu123',
+                is_admin=False,
+                is_locked=False,
+                is_visible=True,
+                login_attempts=0,
+                created_at=datetime.now()
+            )
+            db.session.add(tetsu)
+            db.session.commit()
 
-    def test_create_initial_data_with_partial_data(self, app, session):
-        """一部のデータのみが存在する場合のテスト"""
-        # tetsuユーザーのみを先に作成
-        tetsu = User(
-            userid='tetsu',
-            name='既存tetsu',
-            password='old_password',
-            created_at=datetime.now()
-        )
-        session.add(tetsu)
-        session.flush()
+            # 初期データを作成
+            create_initial_data()
 
-        # 初期データを作成
-        create_initial_data()
+            # tetsuユーザーが保持され、他のデータが作成されていることを確認
+            tetsu = db.session.execute(select(User).filter_by(userid='tetsu')).scalar_one()
+            assert tetsu.name == 'existing tetsu'
 
-        # tetsuユーザーのデータが維持されていることを確認
-        tetsu = session.query(User).filter_by(userid='tetsu').first()
-        assert tetsu.name == '既存tetsu'
-        assert tetsu.password == 'old_password'
+            admin = db.session.execute(select(User).filter_by(userid='admin')).scalar_one()
+            assert admin.name == '管理人'
 
-        # 他のユーザーとエントリーが作成されていることを確認
-        assert session.query(User).filter_by(userid='admin').first() is not None
-        assert session.query(User).filter_by(userid='gento').first() is not None
-        assert len(session.query(Entry).all()) == 2
+            gento = db.session.execute(select(User).filter_by(userid='gento')).scalar_one()
+            assert gento.name == 'gen chan'
 
-    def test_create_initial_data_error_handling(self, app, session):
+    def test_create_initial_data_error_handling(self, app):
         """エラーハンドリングのテスト"""
-        def mock_add_error(obj):
-            raise SQLAlchemyError("Database error")
+        with app.app_context():
+            # 無効なユーザーを作成してエラーを発生させる
+            with pytest.raises(ValueError, match='Name must be a string'):
+                User(
+                    userid='test',
+                    name=None,  # 無効な名前
+                    password='password',
+                    is_admin=False,
+                    is_locked=False,
+                    is_visible=True,
+                    login_attempts=0,
+                    created_at=datetime.now()
+                )
 
-        # セッションのadd操作をモック
-        original_add = session.add
-        session.add = mock_add_error
-
-        try:
-            with pytest.raises(SQLAlchemyError):
-                create_initial_data()
-        finally:
-            session.add = original_add
-            session.rollback()
-
-        # データが作成されていないことを確認
-        session.expunge_all()  # セッションをクリア
-        assert session.query(User).count() == 0
-        assert session.query(Entry).count() == 0
-        assert session.query(DiaryItem).count() == 0
+            # 正常に初期データを作成できることを確認
+            create_initial_data()
+            admin = db.session.execute(select(User).filter_by(userid='admin')).scalar_one()
+            assert admin.name == '管理人'

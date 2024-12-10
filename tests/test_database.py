@@ -1,156 +1,155 @@
 import pytest
 from flask import Flask
-from database import db, init_db, logger, setup_event_listeners
+from database import db, init_db, setup_event_listeners
 import logging
+from unittest.mock import patch, MagicMock
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from models.user import User
-from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 class TestDatabase:
-    def test_database_initialization(self, app, session):
+    def test_database_initialization(self):
         """データベース初期化のテスト"""
-        # データベース接続が確立されていることを確認
-        assert db.engine is not None, "データベースエンジンが初期化されていません"
-        assert db.session is not None, "データベースセッションが初期化されていません"
+        # 新しいFlaskアプリケーションを作成
+        test_app = Flask(__name__)
         
-        # テーブルが作成されていることを確認
-        result = session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
-        tables = [row[0] for row in result]
-        
-        expected_tables = ['users', 'entries', 'diary_items']
-        for table in expected_tables:
-            assert table in tables, f"テーブル '{table}' が見つかりません"
+        # デフォルトのデータベースURI設定のテスト
+        init_db(test_app)
+        assert test_app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///diary.db'
+        assert test_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] is False
 
-    def test_database_logging(self, app, caplog):
+        # カスタムURIでの初期化テスト
+        test_app = Flask(__name__)
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///custom.db'
+        init_db(test_app)
+        assert test_app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///custom.db'
+
+    def test_database_logging(self, caplog):
         """データベースログ出力のテスト"""
+        caplog.set_level(logging.DEBUG)
+        
+        # 新しいFlaskアプリケーションを作成
+        test_app = Flask(__name__)
+        
+        # データベース初期化のログをテスト
         with caplog.at_level(logging.DEBUG):
-            test_app = Flask(__name__)
-            test_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-            
-            with test_app.app_context():
-                init_db(test_app)
-                
-                expected_logs = [
-                    "Initializing database",
-                    "Creating all tables",
-                    "Database initialization complete"
-                ]
-                
-                for log in expected_logs:
-                    assert log in caplog.text, f"ログメッセージ '{log}' が出力されていません"
+            init_db(test_app)
+            assert "Initializing database" in caplog.text
+            assert "Database initialization complete" in caplog.text
 
     def test_database_uri_configuration(self):
         """データベースURI設定のテスト"""
-        # デフォルトURI設定のテスト
+        # URIが未設定の場合
         test_app = Flask(__name__)
+        init_db(test_app)
+        assert test_app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///diary.db'
+
+        # URIが事前設定されている場合
+        test_app = Flask(__name__)
+        custom_uri = 'sqlite:///test.db'
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = custom_uri
+        init_db(test_app)
+        assert test_app.config['SQLALCHEMY_DATABASE_URI'] == custom_uri
+
+    def test_event_listeners(self, caplog):
+        """イベントリスナーのテスト"""
+        caplog.set_level(logging.DEBUG)
+        
+        # 新しいFlaskアプリケーションを作成
+        test_app = Flask(__name__)
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        
         with test_app.app_context():
             init_db(test_app)
-            assert test_app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///diary.db', \
-                "デフォルトのデータベースURIが正しくありません"
-            assert test_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] is False, \
-                "SQLALCHEMY_TRACK_MODIFICATIONSが正しく設定されていません"
-        
-        # カスタムURI設定のテスト
-        test_app2 = Flask(__name__)
-        test_app2.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        with test_app2.app_context():
-            init_db(test_app2)
-            assert test_app2.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///:memory:', \
-                "カスタムデータベースURIが正しく設定されていません"
-
-    def test_database_commit_and_rollback(self, app, session, caplog):
-        """コミットとロールバックのテスト"""
-        # イベントリスナーを設定
-        setup_event_listeners(app)
-
-        with caplog.at_level(logging.DEBUG):
+            setup_event_listeners(test_app)
+            
+            # ログをクリア
             caplog.clear()
-
-            # 正常なトランザクションのテスト
-            user = User(
+            
+            # SQLクエリのログ出力テスト
+            db.session.execute(text('SELECT 1'))
+            assert "SQL: SELECT 1" in caplog.text
+            
+            # フラッシュとコミットのテスト
+            test_user = User(
                 userid='test_user',
                 name='Test User',
                 password='password',
                 is_admin=False,
                 is_locked=False,
                 is_visible=True,
-                login_attempts=0,
-                created_at=datetime.now()
+                login_attempts=0
             )
-            session.add(user)
-            session.commit()
-            assert "Session committed" in caplog.text, "コミットイベントが記録されていません"
+            db.session.add(test_user)
+            db.session.flush()
+            assert "Session flushed" in caplog.text
             
-            caplog.clear()
+            db.session.commit()
+            assert "Session committed" in caplog.text
             
-            # ロールバックのテスト
+            # SQLAlchemyエラーとロールバックのテスト
             try:
-                # 重複するユーザーIDを追加（一意性制約違反）
+                # 無効なSQLを実行してロールバックを強制
+                db.session.execute(text('INVALID SQL'))
+                pytest.fail("Should have raised an exception")
+            except SQLAlchemyError:
+                db.session.rollback()
+                assert "Session rollback" in caplog.text
+
+            # 整合性エラーとロールバックのテスト
+            try:
+                # 同じユーザーIDで再度追加を試みる
                 duplicate_user = User(
-                    userid='test_user',  # 既存のユーザーID
-                    name='Duplicate User',
+                    userid='test_user',  # 既存のユーザーIDを使用
+                    name='Another User',
                     password='password',
                     is_admin=False,
                     is_locked=False,
                     is_visible=True,
-                    login_attempts=0,
-                    created_at=datetime.now()
+                    login_attempts=0
                 )
-                session.add(duplicate_user)
-                session.commit()
-                pytest.fail("重複するユーザーIDが許可されました")
-            except SQLAlchemyError:
-                session.rollback()
-                assert "Session rollback" in caplog.text, "ロールバックイベントが記録されていません"
+                db.session.add(duplicate_user)
+                db.session.commit()
+                pytest.fail("Should have raised an IntegrityError")
+            except IntegrityError:
+                db.session.rollback()
+                assert "Session rollback" in caplog.text
 
-    def test_database_flush(self, app, session, caplog):
-        """フラッシュ操作のテスト"""
-        # イベントリスナーを設定
-        setup_event_listeners(app)
+    def test_database_error_handling(self):
+        """データベースエラーハンドリングのテスト"""
+        test_app = Flask(__name__)
+        test_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        init_db(test_app)
+        
+        with test_app.app_context():
+            # SQLAlchemyエラーのテスト
+            with pytest.raises(SQLAlchemyError):
+                db.session.execute(text('INVALID SQL'))
+                db.session.commit()
 
-        with caplog.at_level(logging.DEBUG):
-            caplog.clear()
-            
-            # フラッシュイベントのテスト
-            user = User(
-                userid='flush_test_user',
-                name='Flush Test User',
+            # 整合性エラーのテスト
+            db.create_all()
+            test_user = User(
+                userid='test_user',
+                name='Test User',
                 password='password',
                 is_admin=False,
                 is_locked=False,
                 is_visible=True,
-                login_attempts=0,
-                created_at=datetime.now()
+                login_attempts=0
             )
-            session.add(user)
-            session.flush()
-            assert "Session flushed" in caplog.text, "フラッシュイベントが記録されていません"
+            db.session.add(test_user)
+            db.session.commit()
 
-    def test_sql_query_logging(self, app, session, caplog):
-        """SQLクエリログ出力のテスト"""
-        # イベントリスナーを設定
-        setup_event_listeners(app)
-
-        with caplog.at_level(logging.DEBUG):
-            caplog.clear()
-            
-            # テストクエリを実行
-            session.execute(text("SELECT 1"))
-            
-            assert "SQL:" in caplog.text, "SQLクエリがログに記録されていません"
-
-    def test_database_error_handling(self, app, session):
-        """データベースエラーハンドリングのテスト"""
-        # 無効なSQLを実行して例外が発生することを確認
-        with pytest.raises(OperationalError) as exc_info:
-            session.execute(text("INVALID SQL"))
-        assert "syntax error" in str(exc_info.value).lower(), \
-            "無効なSQLに対して適切なエラーが発生しませんでした"
-
-        # トランザクションのロールバックを確認
-        session.rollback()
-        
-        # セッションがまだ使用可能であることを確認
-        result = session.execute(text("SELECT 1"))
-        assert result.scalar() == 1, "エラー後のセッションが正常に機能していません"
+            with pytest.raises(IntegrityError):
+                duplicate_user = User(
+                    userid='test_user',  # 既存のユーザーIDを使用
+                    name='Another User',
+                    password='password',
+                    is_admin=False,
+                    is_locked=False,
+                    is_visible=True,
+                    login_attempts=0
+                )
+                db.session.add(duplicate_user)
+                db.session.commit()

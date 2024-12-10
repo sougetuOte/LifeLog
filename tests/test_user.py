@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 from models.user import User
 from models.entry import Entry
-from database import db
+from database import db, logger
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import text
 
@@ -340,3 +340,61 @@ class TestUser:
             )
             assert repr(user) == case['expected'], \
                 f"ユーザーID '{case['userid']}' の文字列表現が正しくありません"
+
+    def test_logging(self, app, session, caplog):
+        """ログ出力のテスト"""
+        caplog.set_level('DEBUG')
+        
+        user = User(
+            userid='test_user',
+            name='Test User',
+            password='password123',
+            created_at=datetime.now()
+        )
+        session.add(user)
+        session.flush()
+
+        # パスワードチェックのログ
+        user.check_password('test_password')
+        assert "Checking password for user test_user" in caplog.text
+        assert "Stored password: password123" in caplog.text
+        assert "Input password: test_password" in caplog.text
+        assert "Password check result: False" in caplog.text
+
+        caplog.clear()
+
+        # パスワードバリデーションのログ
+        user.validate_password('test_password')
+        assert "Validating password for user test_user" in caplog.text
+        assert "Password validation result: False" in caplog.text
+
+        caplog.clear()
+
+        # ロック状態チェックのログ
+        user.check_lock_status()
+        assert "Checking lock status for user test_user" in caplog.text
+        assert "Current login attempts: 0" in caplog.text
+        assert "Is locked: False" in caplog.text
+        assert "Lock status check result: False" in caplog.text
+
+        caplog.clear()
+
+        # ログイン試行のログ
+        user.increment_login_attempts()
+        assert "Incrementing login attempts for user test_user" in caplog.text
+        assert "Current attempts: 0" in caplog.text
+        assert "New attempts: 1" in caplog.text
+
+        caplog.clear()
+
+        # ログイン試行リセットのログ
+        user.reset_login_attempts()
+        assert "Resetting login attempts for user test_user" in caplog.text
+        assert "Login attempts reset complete" in caplog.text
+
+        caplog.clear()
+
+        # ユーザー検索のログ
+        User.find_by_userid('test_user')
+        assert "Looking up user by userid: test_user" in caplog.text
+        assert "User lookup result:" in caplog.text

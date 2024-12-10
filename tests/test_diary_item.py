@@ -254,3 +254,76 @@ class TestDiaryItem:
         diary_item2.created_at = new_time
         assert diary_item2.created_at == new_time
         assert diary_item2.created_at != original_time
+
+    def test_whitespace_validation(self, app, session):
+        """空白文字のみの項目名と内容のバリデーションテスト"""
+        user, entry = self.setup_user_and_entry(session)
+
+        # 空白文字のみの項目名
+        with pytest.raises(ValueError, match='Item name cannot be empty'):
+            DiaryItem(
+                entry_id=entry.id,
+                item_name='   ',
+                item_content='Valid Content'
+            )
+
+        # 空白文字のみの内容
+        with pytest.raises(ValueError, match='Item content cannot be empty'):
+            DiaryItem(
+                entry_id=entry.id,
+                item_name='Valid Name',
+                item_content='   '
+            )
+
+        # タブや改行のみの項目名
+        with pytest.raises(ValueError, match='Item name cannot be empty'):
+            DiaryItem(
+                entry_id=entry.id,
+                item_name='\t\n',
+                item_content='Valid Content'
+            )
+
+    def test_entry_object_initialization(self, app, session):
+        """Entryオブジェクトを直接渡した場合の初期化テスト"""
+        user, entry = self.setup_user_and_entry(session)
+
+        # Entryオブジェクトを直接渡してDiaryItemを作成
+        diary_item = DiaryItem(
+            entry=entry,
+            item_name='Test Item',
+            item_content='Test Content'
+        )
+        session.add(diary_item)
+        session.flush()
+
+        # entry_idが正しく設定されていることを確認
+        assert diary_item.entry_id == entry.id
+        assert diary_item.entry == entry
+
+    def test_multiple_items_per_entry(self, app, session):
+        """同じEntryに複数のDiaryItemを関連付けるテスト"""
+        user, entry = self.setup_user_and_entry(session)
+
+        # 複数のDiaryItemを作成
+        items = []
+        for i in range(5):
+            item = DiaryItem(
+                entry_id=entry.id,
+                item_name=f'Item {i}',
+                item_content=f'Content {i}'
+            )
+            items.append(item)
+            session.add(item)
+        session.flush()
+
+        # 全てのアイテムが正しく関連付けられていることを確認
+        assert len(entry.items) == 5
+        for i, item in enumerate(items):
+            assert item in entry.items
+            assert item.entry == entry
+            assert item.item_name == f'Item {i}'
+            assert item.item_content == f'Content {i}'
+
+        # アイテムの順序が作成順を維持していることを確認
+        for i in range(len(items) - 1):
+            assert items[i].created_at <= items[i + 1].created_at
