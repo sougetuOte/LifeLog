@@ -15,6 +15,10 @@ import re
 - .env ファイル
 - package-lock.json （依存関係のロックファイル）
 - lifelog_all_*.md （過去のマージファイル）
+- .pytest_cache （Pytestのキャッシュディレクトリ）
+- docs/diagrams.md （英語の設計図ドキュメント）
+- docs/specification.md （英語の仕様ドキュメント）
+- README.md （プロジェクト説明ドキュメント）
 """
 
 def should_exclude(path):
@@ -29,8 +33,13 @@ def should_exclude(path):
         r'\.sqlite3$',
         r'\.log$',
         r'\.env$',
+        r'\.coveragerc$',
         r'package-lock\.json$',
-        r'lifelog_all_\d{8}(_\d+)?\.md$'  # マージ出力ファイルのパターンを追加
+        r'lifelog_all_\d{8}(_\d+)?\.md$',  # マージ出力ファイルのパターン
+        r'\.pytest_cache',  # Pytestのキャッシュディレクトリ
+        r'docs/diagrams\.md$',  # 英語の設計図ドキュメント
+        r'docs/specification\.md$',  # 英語の仕様ドキュメント
+        r'README\.md$'  # プロジェクト説明ドキュメント
     ]
     
     return any(re.search(pattern, path) for pattern in exclude_patterns)
