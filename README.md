@@ -10,6 +10,7 @@ A simple diary posting and management system with user authentication, featuring
 - 2024/12/08: Model structure improvements and test additions
 - 2024/12/09: Migration functionality added
 - 2024/12/10: Test coverage improvements, documentation updates, and environment setup changes
+- 2025/01/08: Pagination feature implementation
 
 ## Key Features
 
@@ -17,6 +18,7 @@ A simple diary posting and management system with user authentication, featuring
 - Diary Entry Management (Create, Edit, Delete)
 - Administrative Functions (User Management, Content Management)
 - Simple and User-Friendly Interface
+- Pagination Support (10 entries per page)
 
 ## Technology Stack
 
@@ -98,7 +100,6 @@ Test Users:
 
 The current development version has the following limitations:
 - No file upload functionality
-- No pagination support
 - No password reset feature
 - No account deletion reversal
 

@@ -5,6 +5,7 @@
 - 2024/12/08: Model structure improvements and test configuration additions
 - 2024/12/09: Database structure and migration specification additions
 - 2024/12/10: Test coverage updates, component diagram improvements, and environment setup changes
+- 2025/01/08: Pagination feature implementation
 
 ## 1. Screen Transition Diagram
 
@@ -162,6 +163,25 @@ sequenceDiagram
     else Password is incorrect
         Backend-->>Frontend: Authentication error
     end
+```
+
+### Pagination Process
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant Backend
+    participant Database
+
+    User->>Frontend: Select page number
+    Frontend->>Backend: GET /entries?page={page}
+    Backend->>Database: Get total entries count
+    Database-->>Backend: Total entries count
+    Backend->>Database: Get paginated entries
+    Database-->>Backend: Entry data
+    Backend-->>Frontend: Entry list and page info
+    Frontend->>Frontend: Update view and adjust scroll position
 ```
 
 ### Diary Entry Process

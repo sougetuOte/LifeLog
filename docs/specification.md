@@ -5,6 +5,7 @@
 - 2024/12/08: Model structure improvements and test specification additions
 - 2024/12/09: Database structure and migration specification additions
 - 2024/12/10: Test coverage updates, security specification enhancements, and environment setup changes
+- 2025/01/08: Pagination feature implementation
 
 
 ## Table of Contents
@@ -107,11 +108,14 @@ Logged-in state:
 
 #### 3.2.1 Home Screen (/)
 - Diary entry list
+  - 10 entries per page
+  - Page navigation (Previous/Next buttons)
+  - Page information display (current page/total pages, total entries)
+  - Automatic scroll position adjustment
 - Entry form (logged-in users only)
   - Title input
   - Content input
   - Notes input (weather, mood, health condition, etc.)
-- No pagination
 
 #### 3.2.2 Login Screen (/login)
 - User ID input
@@ -482,9 +486,7 @@ models.py          # SQLAlchemy Model Definitions (Unified)
 
 ### 8.2 Limitations
 - No file upload functionality
-- No pagination support
 - No password reset feature
 - No account deletion reversal
 - No bulk operation functionality
 - No API documentation
-

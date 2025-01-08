@@ -304,23 +304,34 @@ def toggle_visibility(user_id):
 @app.route('/entries', methods=['GET'])
 def get_entries():
     logger.debug('Get entries request received')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
     if 'user_id' in session and session.get('is_admin'):
         logger.debug('Admin user requesting all entries')
         # 管理者は全ての投稿を表示（退会ユーザーの投稿も含む）
-        stmt = select(Entry).join(User).order_by(
+        query = select(Entry).join(User).order_by(
             desc(Entry.updated_at if Entry.updated_at is not None else Entry.created_at)
         )
     else:
         logger.debug('Regular user or non-logged-in user requesting entries')
         # 未ログインユーザーまたは一般ユーザーは可視状態のユーザーの投稿のみ表示
-        stmt = select(Entry).join(User).filter(User.is_visible == True).order_by(
+        query = select(Entry).join(User).filter(User.is_visible == True).order_by(
             desc(Entry.updated_at if Entry.updated_at is not None else Entry.created_at)
         )
     
-    entries = db.session.execute(stmt).scalars().all()
+    # 総エントリー数を取得
+    total = db.session.execute(query).scalars().all()
+    total_entries = len(total)
+    total_pages = (total_entries + per_page - 1) // per_page
+
+    # ページネーション適用
+    query = query.offset((page - 1) * per_page).limit(per_page)
+    entries = db.session.execute(query).scalars().all()
     logger.debug('Retrieved %d entries', len(entries))
 
-    entry_list = [{
+    response_data = {
+        'entries': [{
         'id': entry.id,
         'title': entry.title,
         'content': entry.content,
@@ -338,9 +349,17 @@ def get_entries():
         'can_edit': 'user_id' in session and (
             session.get('is_admin') or (entry.user_id == session['user_id'] and entry.user.is_visible)
         )
-    } for entry in entries]
+    } for entry in entries],
+        'pagination': {
+            'current_page': page,
+            'total_pages': total_pages,
+            'total_entries': total_entries,
+            'has_prev': page > 1,
+            'has_next': page < total_pages
+        }
+    }
 
-    return jsonify(entry_list)
+    return jsonify(response_data)
 
 @app.route('/entries', methods=['POST'])
 @login_required

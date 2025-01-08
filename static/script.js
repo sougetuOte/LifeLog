@@ -1,5 +1,6 @@
 // グローバル変数
 let currentEditId = null;
+let currentPage = 1;
 
 // ページ読み込み時にエントリーを取得
 document.addEventListener('DOMContentLoaded', () => {
@@ -176,15 +177,17 @@ async function updateEntry() {
 }
 
 // 日記エントリーを読み込み
-async function loadEntries() {
+async function loadEntries(page = 1) {
     try {
-        const response = await fetch('/entries');
-        const entries = await response.json();
+        const response = await fetch(`/entries?page=${page}`);
+        const data = await response.json();
         
         const entriesDiv = document.getElementById('entries');
+        const paginationDiv = document.getElementById('pagination');
         entriesDiv.innerHTML = '';
 
-        entries.forEach(entry => {
+        // エントリーの表示
+        data.entries.forEach(entry => {
             const entryElement = document.createElement('div');
             entryElement.className = 'entry';
             
@@ -246,10 +249,39 @@ async function loadEntries() {
             `;
             entriesDiv.appendChild(entryElement);
         });
+
+        // ページネーションUIの更新
+        updatePagination(data.pagination);
     } catch (error) {
         console.error('Error:', error);
         alert('エントリーの読み込みに失敗しました');
     }
+}
+
+// ページネーションUIの更新
+function updatePagination(pagination) {
+    const paginationDiv = document.getElementById('pagination');
+    paginationDiv.innerHTML = `
+        <button onclick="changePage(${pagination.current_page - 1})" 
+                ${!pagination.has_prev ? 'disabled' : ''}>
+            前へ
+        </button>
+        <span class="page-info">
+            ${pagination.current_page} / ${pagination.total_pages} ページ
+            (全${pagination.total_entries}件)
+        </span>
+        <button onclick="changePage(${pagination.current_page + 1})"
+                ${!pagination.has_next ? 'disabled' : ''}>
+            次へ
+        </button>
+    `;
+}
+
+// ページ切り替え
+function changePage(page) {
+    currentPage = page;
+    loadEntries(page);
+    window.scrollTo(0, 0);
 }
 
 // 日記エントリーを削除

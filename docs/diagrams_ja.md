@@ -5,6 +5,7 @@
 - 2024/12/08: モデル構造の改善とテスト構成の追加
 - 2024/12/09: データベース構造とリレーションシップの詳細追加
 - 2024/12/10: テストカバレッジの更新とコンポーネント図の改善、環境構築方法の変更
+- 2025/01/08: ページネーション機能の実装
 
 ## 1. 画面遷移図
 
@@ -163,6 +164,25 @@ sequenceDiagram
     else パスワードが間違っている
         Backend-->>Frontend: 認証エラー
     end
+```
+
+### ページネーション処理
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant Backend
+    participant Database
+
+    User->>Frontend: ページ番号選択
+    Frontend->>Backend: GET /entries?page={page}
+    Backend->>Database: エントリー総数取得
+    Database-->>Backend: 総エントリー数
+    Backend->>Database: ページネーション済みエントリー取得
+    Database-->>Backend: エントリーデータ
+    Backend-->>Frontend: エントリー一覧とページ情報
+    Frontend->>Frontend: 画面更新とスクロール位置調整
 ```
 
 ### 日記投稿プロセス
