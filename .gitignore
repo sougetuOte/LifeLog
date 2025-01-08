@@ -49,3 +49,9 @@ coverage.xml
 
 # merge files
 lifelog_all_*.md
+
+#memo
+2025*.md
+
+#prompt_memo
+ドキュメント更新プロンプト.txt
