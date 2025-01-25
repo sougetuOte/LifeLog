@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, make_response
 from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import datetime
 import re
 import functools
@@ -15,6 +16,16 @@ logger = logging.getLogger('app')
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # 本番環境では安全な値に変更してください
 csrf = CSRFProtect(app)
+
+# Flask-Login の設定
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'このページにアクセスするにはログインが必要です。'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 # セキュリティヘッダーの設定
 @app.after_request
@@ -49,47 +60,35 @@ init_db(app)
 
 MAX_LOGIN_ATTEMPTS = 3  # ログイン試行回数を3回に変更
 
-# ログイン必須デコレータ
-def login_required(f):
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        logger.debug('Checking login requirement')
-        logger.debug('Session: %s', dict(session))
-        if 'user_id' not in session:
-            logger.debug('User not logged in, returning 401')
-            return jsonify({'error': 'ログインが必要です'}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
 # 管理者必須デコレータ
 def admin_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        logger.debug('Checking admin requirement')
-        logger.debug('Session: %s', dict(session))
-        if 'user_id' not in session or not session.get('is_admin'):
-            logger.debug('User not admin, returning 403')
+        if not current_user.is_authenticated or not current_user.is_admin:
             return jsonify({'error': '管理者権限が必要です'}), 403
         return f(*args, **kwargs)
     return decorated_function
 
 @app.route('/')
+@login_required
 def index():
     logger.debug('Accessing index page')
     return render_template('index.html')
 
 @app.route('/login', methods=['GET'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
     logger.debug('Accessing login page')
     return render_template('login.html')
 
-@app.route('/settings', methods=['GET'])
+@app.route('/settings')
 @login_required
 def settings():
     logger.debug('Accessing settings page')
     return render_template('settings.html')
 
-@app.route('/admin', methods=['GET'])
+@app.route('/admin')
 @admin_required
 def admin():
     logger.debug('Accessing admin page')
@@ -127,11 +126,8 @@ def api_login():
         user.last_login_attempt = None
         db.session.commit()
         
-        session['user_id'] = user.id
-        session['is_admin'] = user.is_admin
-        session['name'] = user.name
-        session['userid'] = user.userid
-        logger.debug('Session updated: %s', dict(session))
+        login_user(user)
+        logger.debug('User logged in via Flask-Login')
         return jsonify({'message': 'ログインしました'})
     else:
         logger.debug('Invalid password for user: %s', userid)
@@ -149,12 +145,10 @@ def api_login():
         else:
             return jsonify({'error': 'アカウントがロックされました。管理者に連絡してください'}), 403
 
-@app.route('/api/logout', methods=['POST'])
+@app.route('/logout')
+@login_required
 def logout():
-    logger.debug('Logout request received')
-    logger.debug('Session before logout: %s', dict(session))
-    session.clear()
-    logger.debug('Session cleared')
+    logout_user()
     return jsonify({'message': 'ログアウトしました'})
 
 @app.route('/api/user/settings', methods=['PUT'])
@@ -167,11 +161,11 @@ def update_user_settings():
     current_password = request.json.get('currentPassword')
     new_password = request.json.get('newPassword')
     
-    stmt = select(User).filter_by(id=session['user_id'], is_visible=True)
+    stmt = select(User).filter_by(id=current_user.id, is_visible=True)
     user = db.session.execute(stmt).scalar_one_or_none()
     
     if not user:
-        logger.debug('User not found: %s', session['user_id'])
+        logger.debug('User not found: %s', current_user.id)
         return jsonify({'error': 'ユーザーが見つかりません'}), 404
     
     # パスワード変更がある場合
@@ -190,7 +184,6 @@ def update_user_settings():
         logger.debug('Name updated')
     
     db.session.commit()
-    session['name'] = name
     logger.debug('Settings update successful')
     return jsonify({'message': '設定を更新しました'})
 
@@ -205,11 +198,11 @@ def deactivate_account():
         logger.debug('Password not provided')
         return jsonify({'error': 'パスワードを入力してください'}), 400
 
-    stmt = select(User).filter_by(id=session['user_id'], is_visible=True)
+    stmt = select(User).filter_by(id=current_user.id, is_visible=True)
     user = db.session.execute(stmt).scalar_one_or_none()
 
     if not user:
-        logger.debug('User not found: %s', session['user_id'])
+        logger.debug('User not found: %s', current_user.id)
         return jsonify({'error': 'ユーザーが見つかりません'}), 404
 
     if not user.check_password(password):
@@ -224,7 +217,6 @@ def deactivate_account():
     # ユーザーを不可視に設定
     user.is_visible = False
     db.session.commit()
-    session.clear()
     logger.debug('Account deactivated successfully')
     return jsonify({'message': '退会処理が完了しました'})
 
@@ -232,7 +224,7 @@ def deactivate_account():
 @admin_required
 def get_users():
     logger.debug('Admin user list request received')
-    stmt = select(User).filter(User.userid != session['userid']).order_by(User.userid)
+    stmt = select(User).filter(User.userid != current_user.userid).order_by(User.userid)
     users = db.session.execute(stmt).scalars().all()
     
     user_list = [{
@@ -307,7 +299,7 @@ def get_entries():
     page = request.args.get('page', 1, type=int)
     per_page = 10
 
-    if 'user_id' in session and session.get('is_admin'):
+    if current_user.is_authenticated and current_user.is_admin:
         logger.debug('Admin user requesting all entries')
         # 管理者は全ての投稿を表示（退会ユーザーの投稿も含む）
         query = select(Entry).join(User).order_by(
@@ -346,8 +338,8 @@ def get_entries():
         'author_userid': entry.user.userid,
         'is_visible': entry.user.is_visible,
         'user_id': entry.user_id,
-        'can_edit': 'user_id' in session and (
-            session.get('is_admin') or (entry.user_id == session['user_id'] and entry.user.is_visible)
+        'can_edit': current_user.is_authenticated and (
+            current_user.is_admin or (entry.user_id == current_user.id and entry.user.is_visible)
         )
     } for entry in entries],
         'pagination': {
@@ -379,7 +371,7 @@ def add_entry():
         logger.debug('Content is empty')
         return jsonify({'error': '内容が空です'}), 400
     
-    user = db.session.get(User, session['user_id'])
+    user = db.session.get(User, current_user.id)
     if not user or not user.is_visible:
         logger.debug('User account is invalid')
         return jsonify({'error': 'アカウントが無効です'}), 403
@@ -387,7 +379,7 @@ def add_entry():
     try:
         # エントリーを作成
         entry = Entry(
-            user_id=session['user_id'],
+            user_id=current_user.id,
             title=title,
             content=content,
             notes=notes,
@@ -430,8 +422,8 @@ def update_entry(entry_id):
         return jsonify({'error': '投稿が見つかりません'}), 404
     
     # 管理者以外の場合、退会済みユーザーは編集不可
-    if not session.get('is_admin') and (
-        entry.user_id != session['user_id'] or not entry.user.is_visible
+    if not current_user.is_admin and (
+        entry.user_id != current_user.id or not entry.user.is_visible
     ):
         logger.debug('User does not have edit permission')
         return jsonify({'error': '編集権限がありません'}), 403
@@ -494,8 +486,8 @@ def delete_entry(entry_id):
         return jsonify({'error': '投稿が見つかりません'}), 404
     
     # 管理者以外の場合、退会済みユーザーは削除不可
-    if not session.get('is_admin') and (
-        entry.user_id != session['user_id'] or not entry.user.is_visible
+    if not current_user.is_admin and (
+        entry.user_id != current_user.id or not entry.user.is_visible
     ):
         logger.debug('User does not have delete permission')
         return jsonify({'error': '削除権限がありません'}), 403

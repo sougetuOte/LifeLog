@@ -1,6 +1,6 @@
 # LifeLogについて
 
-シンプルな日記投稿・管理システムです。ユーザー認証機能を備え、一般ユーザーと管理者の権限分けがある日記アプリケーションです。
+シンプルな日記投稿・管理システムです。ユーザー認証機能を備え、一般ユーザーと管理者の権限制御がある日記アプリケーションです。
 
 ## 重要
 - このアプリケーションは開発中のものであり、セキュリティやパフォーマンスの問題がある可能性があります。
@@ -36,20 +36,24 @@
 
 1. Python環境の準備
 ```bash
-# condaのインストール（未インストールの場合）
-# Minicondaをダウンロードしてインストール: https://docs.conda.io/en/latest/miniconda.html
-
-# conda環境の作成
+# Minicondaを使用する場合（推奨）
+# 1. Minicondaをダウンロードしてインストール: https://docs.conda.io/en/latest/miniconda.html
+# 2. 以下のコマンドを実行：
 conda create -n lifelog python=3.11
 conda activate lifelog
+conda install --file requirements.txt
+
+# または、Anacondaを使用する場合
+# 1. Anacondaをダウンロードしてインストール: https://www.anaconda.com/download
+# 2. 以下のコマンドを実行：
+conda create -n lifelog python=3.11
+conda activate lifelog
+conda install --file requirements.txt
 ```
 
-2. 依存パッケージのインストール
-```bash
-pip install -r requirements.txt
-```
+注意: Anacondaとminicondaは混在させないでください。どちらか一方を選択して使用してください。
 
-3. データベースのセットアップ
+2. データベースのセットアップ
 ```bash
 # マイグレーションの実行
 alembic upgrade head
@@ -58,7 +62,7 @@ alembic upgrade head
 python -c "from models import create_initial_data; create_initial_data()"
 ```
 
-4. アプリケーションの起動
+3. アプリケーションの起動
 ```bash
 python app.py
 ```

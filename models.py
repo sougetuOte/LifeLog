@@ -1,12 +1,13 @@
 from datetime import datetime
 from sqlalchemy import Boolean, Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
+from flask_login import UserMixin
 from database import db
 
 class Base(DeclarativeBase):
     pass
 
-class User(db.Model, Base):
+class User(UserMixin, db.Model, Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -29,6 +30,15 @@ class User(db.Model, Base):
     def check_password(self, password: str) -> bool:
         # TODO: パスワードのハッシュ化比較を実装
         return self.password == password
+
+    def get_id(self):
+        return str(self.id)
+
+    def is_active(self):
+        return self.is_visible and not self.is_locked
+
+    def is_authenticated(self):
+        return True
 
 class Entry(db.Model, Base):
     __tablename__ = 'entries'
